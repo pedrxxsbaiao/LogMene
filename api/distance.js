@@ -35,7 +35,23 @@ export default async function handler(req, res) {
     console.log(`Calculando distância de "${origin}" para "${destination}"`);
     
     // Importar o serviço de distância (usando dynamic import)
-    const { getDistanceBetweenAddresses } = await import('../server/services/distance-service.js');
+    // Nota: A importação em serverless (Vercel) é diferente do servidor local
+    let getDistanceBetweenAddresses;
+    try {
+      // Primeiro tenta importar da forma usada em ambiente Vercel
+      const module = await import('../dist/server/services/distance-service.js');
+      getDistanceBetweenAddresses = module.getDistanceBetweenAddresses;
+    } catch (importError) {
+      console.log('Importação via dist falhou, tentando caminho direto...');
+      try {
+        // Tenta o caminho usado em ambiente de desenvolvimento
+        const module = await import('../server/services/distance-service.js');
+        getDistanceBetweenAddresses = module.getDistanceBetweenAddresses;
+      } catch (secondError) {
+        console.error('Falha em todas as tentativas de importação:', secondError);
+        throw new Error('Não foi possível carregar o serviço de distância');
+      }
+    }
     
     const result = await getDistanceBetweenAddresses(origin, destination);
     

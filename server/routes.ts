@@ -1588,6 +1588,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Recurso de notificação por WhatsApp removido conforme solicitação do cliente
   
+  // Rota para calcular distância entre endereços (suporta GET e POST)
+  app.all('/api/distance', distanceHandler);
+  
   // Rota principal para testar serviço de email
   app.get('/api/test/send-email', async (req, res) => {
     const email = req.query.email as string;
