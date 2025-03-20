@@ -1,8 +1,26 @@
 import twilio from 'twilio';
 import { log } from '../vite';
 
+// Verificar se o modo de simulação está ativado
+const isSmsSimulationEnabled = () => {
+  // Se a variável SMS_SIMULATION_MODE estiver definida como "true" no .env
+  return process.env.SMS_SIMULATION_MODE === 'true';
+};
+
+// Verificar se devemos ignorar a restrição de números verificados
+const shouldBypassVerification = () => {
+  // Se a variável SMS_BYPASS_VERIFICATION estiver definida como "true" no .env
+  return process.env.SMS_BYPASS_VERIFICATION === 'true';
+};
+
 // Criar o cliente Twilio usando as credenciais
 const createTwilioClient = () => {
+  // Se o modo de simulação estiver ativado, não criamos um cliente real
+  if (isSmsSimulationEnabled()) {
+    log('Modo de simulação de SMS ativado. SMS serão apenas registrados, não enviados.', 'twilio-sms');
+    return null;
+  }
+
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
     return null;
   }
@@ -48,6 +66,14 @@ const createTwilioClient = () => {
  * @returns true se o envio foi bem-sucedido, false caso contrário
  */
 export async function sendSMS(to: string, body: string): Promise<boolean> {
+  // Se o modo de simulação estiver ativado, apenas loga e retorna sucesso
+  if (isSmsSimulationEnabled()) {
+    log(`[SMS SIMULADO] Para: ${to}`, 'twilio-sms');
+    log(`[SMS SIMULADO] Mensagem: ${body}`, 'twilio-sms');
+    log(`Modo de simulação ativado. SMS não enviado realmente.`, 'twilio-sms');
+    return true; // Simulamos sucesso para não quebrar o fluxo da aplicação
+  }
+  
   // Se não tiver as credenciais do Twilio, loga e simula o envio
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
     log(`[SMS simulado] Para: ${to}`, 'twilio-sms');
@@ -72,6 +98,19 @@ export async function sendSMS(to: string, body: string): Promise<boolean> {
     
     log(`Enviando SMS via Twilio para: ${formattedPhone}`, 'twilio-sms');
     
+    // Se devemos ignorar erros de verificação de número
+    if (shouldBypassVerification()) {
+      // Em modo bypass, simulamos o envio com sucesso mas ainda logamos
+      log(`Modo bypass ativado. Simulando envio para número não verificado: ${formattedPhone}`, 'twilio-sms');
+      log(`[SMS BYPASS] Para: ${formattedPhone}`, 'twilio-sms');
+      log(`[SMS BYPASS] Mensagem: ${body}`, 'twilio-sms');
+      
+      // Gerar um SID falso para dar feedback como se fosse um envio real
+      const fakeSid = `SM${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+      log(`SMS enviado com sucesso via bypass. SID simulado: ${fakeSid}`, 'twilio-sms');
+      return true;
+    }
+    
     // Enviar SMS via Twilio
     const message = await client.messages.create({
       body,
@@ -82,6 +121,16 @@ export async function sendSMS(to: string, body: string): Promise<boolean> {
     log(`SMS enviado com sucesso via Twilio. SID: ${message.sid}`, 'twilio-sms');
     return true;
   } catch (error) {
+    // Se o erro for de número não verificado e o modo de bypass estiver ativo
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('unverified') && shouldBypassVerification()) {
+      log(`Número não verificado detectado: ${to}`, 'twilio-sms');
+      log(`Modo bypass ativado. Simulando envio com sucesso.`, 'twilio-sms');
+      log(`[SMS BYPASS] Para: ${to}`, 'twilio-sms');
+      log(`[SMS BYPASS] Mensagem: ${body}`, 'twilio-sms');
+      return true; // Retornamos sucesso mesmo com erro real
+    }
+    
     log(`Erro ao enviar SMS via Twilio: ${error}`, 'twilio-sms');
     
     if (error instanceof Error) {
