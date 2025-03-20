@@ -936,10 +936,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const proof = await storage.createDeliveryProof(proofData);
       
-      // Notificar o cliente que um comprovante foi enviado
-      sendDeliveryProofNotification(request.userId, proofData.requestId);
+      // Atualizar status da solicitação para "completed" e definir completedAt
+      const updatedRequest = await storage.updateFreightRequestStatus(proofData.requestId, "completed");
       
-      res.status(201).json(proof);
+      // Notificar o cliente que um comprovante foi enviado e que a solicitação foi concluída
+      sendDeliveryProofNotification(request.userId, proofData.requestId);
+      sendStatusUpdateNotification(request.userId, proofData.requestId, "completed");
+      
+      res.status(201).json({ proof, requestUpdated: !!updatedRequest });
     } catch (error) {
       handleZodError(error, res);
     }
