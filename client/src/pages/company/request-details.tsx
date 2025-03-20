@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { DeliveryProofUploader } from "@/components/delivery-proof-uploader";
+import { RouteMap } from "@/components/route-map";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatISODateToDisplay } from "@/lib/utils";
@@ -239,6 +240,16 @@ export default function CompanyRequestDetailsPage() {
                   <p className="font-medium text-neutral-700">{formatCurrency(request.invoiceValue || 0)}</p>
                 </div>
               </div>
+            </div>
+            
+            {/* Google Maps Integration */}
+            <div className="mb-6">
+              <h3 className="text-lg font-medium text-neutral-700 mb-3">Mapa da Rota</h3>
+              <RouteMap 
+                origin={`${request.originStreet}, ${request.originCity}, ${request.originState}`}
+                destination={`${request.destinationStreet}, ${request.destinationCity}, ${request.destinationState}`}
+                height={400}
+              />
             </div>
             
             {/* Dates */}
