@@ -33,7 +33,9 @@ export function RouteMap({
   useEffect(() => {
     if (showDistance && origin && destination) {
       setLoading(true);
-      axios.post('/api/distance', { origin, destination })
+      
+      // Usar o método GET para maior compatibilidade
+      axios.get(`/api/distance?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`)
         .then(res => {
           if (res.data.success) {
             setDistanceData(res.data);
@@ -43,6 +45,16 @@ export function RouteMap({
         })
         .catch(err => {
           console.error('Erro na requisição de distância:', err);
+          // Tentar via POST como fallback
+          return axios.post('/api/distance', { origin, destination });
+        })
+        .then(res => {
+          if (res?.data?.success) {
+            setDistanceData(res.data);
+          }
+        })
+        .catch(err => {
+          console.error('Erro na requisição de distância (fallback):', err);
         })
         .finally(() => {
           setLoading(false);

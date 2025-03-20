@@ -6,7 +6,18 @@
  * @param {import('express').Response} res
  */
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
+  let origin, destination;
+  
+  // Suportar tanto requisições GET quanto POST
+  if (req.method === 'GET') {
+    // Para requisições GET, os parâmetros vêm na query
+    origin = req.query.origin;
+    destination = req.query.destination;
+  } else if (req.method === 'POST') {
+    // Para requisições POST, os parâmetros vêm no body
+    origin = req.body.origin;
+    destination = req.body.destination;
+  } else {
     return res.status(405).json({ 
       success: false, 
       message: 'Método não permitido' 
@@ -14,8 +25,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { origin, destination } = req.body;
-    
     if (!origin || !destination) {
       return res.status(400).json({ 
         success: false, 

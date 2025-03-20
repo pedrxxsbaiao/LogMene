@@ -72,8 +72,20 @@ export default function CreateQuotePage() {
       const originAddress = `${request.originStreet}, ${request.originCity}, ${request.originState}`;
       const destinationAddress = `${request.destinationStreet}, ${request.destinationCity}, ${request.destinationState}`;
       
+      // Fazer a requisição para cálculo de distância
       const response = await fetch(`/api/distance?origin=${encodeURIComponent(originAddress)}&destination=${encodeURIComponent(destinationAddress)}`);
-      const data = await response.json();
+      let data = await response.json();
+      
+      // Se não for bem-sucedido, tenta via POST como fallback
+      if (!data.success) {
+        console.log("Tentando calcular distância via POST...");
+        const postResponse = await fetch('/api/distance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ origin: originAddress, destination: destinationAddress })
+        });
+        data = await postResponse.json();
+      }
       
       if (data.success) {
         // Atualizar o campo de distância no formulário
@@ -81,7 +93,7 @@ export default function CreateQuotePage() {
         
         toast({
           title: "Distância calculada",
-          description: `A distância entre origem e destino é de aproximadamente ${Math.round(data.distance)} km.`,
+          description: `A distância entre origem e destino é de aproximadamente ${Math.round(data.distance)} km (${data.distanceText}).`,
         });
       } else {
         toast({
@@ -91,6 +103,7 @@ export default function CreateQuotePage() {
         });
       }
     } catch (error) {
+      console.error("Erro ao calcular distância:", error);
       toast({
         title: "Erro ao calcular distância",
         description: "Ocorreu um erro ao se comunicar com o serviço de cálculo de distância.",
