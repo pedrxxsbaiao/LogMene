@@ -21,6 +21,7 @@ import ClientRequestsPage from "@/pages/company/client-requests";
 import TestNotificationPage from "@/pages/test-notification";
 import TestGmailPage from "@/pages/test-gmail";
 import TestDistancePage from "@/pages/test-distance";
+import TestSMSPage from "@/pages/test-sms";
 import { useAuth } from "@/hooks/use-auth";
 
 function Router() {
@@ -99,6 +100,11 @@ function Router() {
       <ProtectedRoute 
         path="/test-distance" 
         component={TestDistancePage} 
+      />
+      
+      <ProtectedRoute 
+        path="/test-sms" 
+        component={TestSMSPage} 
       />
       
       {/* Fallback to 404 */}
