@@ -26,6 +26,7 @@ import {
   sendDeliveryProofNotification,
   sendNewFreightRequestNotification
 } from "./services/notification-service";
+import { distanceHandler } from "./distance-handler";
 
 
 export async function registerRoutes(app: Express): Promise<Server> {
