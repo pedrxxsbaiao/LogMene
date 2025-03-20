@@ -18,8 +18,7 @@ import { log } from "./vite";
 import { sendEmail, sendNewFreightRequestEmail } from "./services/mailersend-service";
 import axios from "axios";
 import { fetchCNPJData, formatAddress, validateCNPJ } from "./services/cnpj-service";
-// Serviço de SMS removido conforme solicitação do cliente
-// Serviço de WhatsApp removido conforme solicitação do cliente
+import { sendSMS } from "./services/sms-service";
 import { 
   sendStatusUpdateNotification, 
   sendQuoteNotification, 
@@ -284,6 +283,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         message: "Falha ao enviar email de nova solicitação",
         error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Rota para testar o envio de SMS via Twilio
+  app.post("/api/test/send-sms", async (req, res) => {
+    try {
+      const { phoneNumber, message } = req.body;
+      
+      if (!phoneNumber) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Número de telefone é obrigatório" 
+        });
+      }
+      
+      // Verificar se as credenciais do Twilio estão configuradas
+      const hasTwilioCredentials = process.env.TWILIO_ACCOUNT_SID && 
+                                  process.env.TWILIO_AUTH_TOKEN && 
+                                  process.env.TWILIO_PHONE_NUMBER;
+      
+      if (!hasTwilioCredentials) {
+        return res.status(500).json({ 
+          success: false, 
+          message: "Credenciais do Twilio não configuradas" 
+        });
+      }
+      
+      // Mensagem padrão se não for fornecida
+      const smsMessage = message || 'Este é um SMS de teste do sistema LogMene. Obrigado por usar nosso serviço!';
+      
+      log(`Enviando SMS de teste para ${phoneNumber}`, 'test-sms');
+      
+      // Enviar SMS utilizando o serviço Twilio
+      const result = await sendSMS(phoneNumber, smsMessage);
+      
+      if (result) {
+        log(`SMS de teste enviado com sucesso para ${phoneNumber}`, 'test-sms');
+        return res.status(200).json({ 
+          success: true, 
+          message: 'SMS enviado com sucesso',
+          phone: phoneNumber
+        });
+      } else {
+        log(`Falha ao enviar SMS de teste para ${phoneNumber}`, 'test-sms');
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Falha ao enviar SMS' 
+        });
+      }
+    } catch (error) {
+      log(`Erro ao processar envio de SMS de teste: ${error}`, 'test-sms');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Erro interno ao processar a solicitação',
+        details: error instanceof Error ? error.message : String(error)
       });
     }
   });
