@@ -1,5 +1,6 @@
 import { storage } from '../storage';
-import { createNotificationEmail, sendEmail } from './mailersend-service';
+import { createNotificationEmail as createMailerSendEmail, sendEmail as sendMailerSendEmail } from './mailersend-service';
+import { createNotificationEmail as createGmailEmail, sendGmailEmail } from './gmail-service';
 import { log } from '../vite';
 import { InsertNotification } from '@shared/schema';
 
