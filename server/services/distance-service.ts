@@ -160,15 +160,14 @@ export async function calculateDistanceWithGoogleApi(
 }> {
   try {
     // Verifica se a API key do Google Maps está configurada
-    if (!process.env.GOOGLE_MAPS_API_KEY) {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
       log('API key do Google Maps não configurada!', 'distance-service');
       return { 
         success: false,
         error: 'API key não configurada' 
       };
     }
-    
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     const url = 'https://routes.googleapis.com/directions/v2:computeRoutes';
     
     // Formata os endereços para melhor precisão
@@ -270,50 +269,49 @@ export async function getDistanceBetweenAddresses(fromAddress: string, toAddress
   error?: string;
 }> {
   try {
-    // Primeiro, tenta usar a Google Routes API
-    if (process.env.GOOGLE_MAPS_API_KEY) {
-      const googleResult = await calculateDistanceWithGoogleApi(fromAddress, toAddress);
-      
-      if (googleResult.success) {
-        return {
-          success: true,
-          distance: googleResult.distanceKm,
-          distanceText: googleResult.distanceKm ? `${googleResult.distanceKm} km` : undefined,
-          duration: googleResult.durationSeconds ? googleResult.durationSeconds / 60 : undefined, // minutos
-          durationText: googleResult.durationText,
-          unit: "km"
-        };
-      } else {
-        log(`Falha na API do Google, recorrendo ao método de fallback: ${googleResult.error}`, 'distance-service');
-      }
-    }
+    // Verificar explicitamente se temos o Google Maps API Key
+    const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
     
-    // Se não tiver a API key ou se a chamada falhar, recorre ao método antigo
-    const distance = fallbackEstimateDistance(fromAddress, toAddress);
-    
-    if (distance === null) {
+    if (!googleMapsApiKey) {
+      log('API key do Google Maps não encontrada no ambiente. Verifique a configuração.', 'distance-service');
       return {
         success: false,
-        error: "Não foi possível calcular a distância entre os endereços fornecidos."
+        error: "Configuração da API Google Maps não encontrada. Entre em contato com o administrador."
       };
     }
     
-    // Estima o tempo baseado na distância (aproximadamente 60 km/h de média)
-    const duration = distance / 60 * 60; // minutos
-    const hours = Math.floor(duration / 60);
-    const minutes = Math.round(duration % 60);
-    const durationText = hours > 0 ? 
-      `~${hours}h ${minutes}min` : 
-      `~${minutes} minutos`;
+    // Usar a Google Routes API, já que a API key está configurada
+    log(`Calculando distância via Google API: origem="${fromAddress}", destino="${toAddress}"`, 'distance-service');
     
-    return {
-      success: true,
-      distance,
-      distanceText: `${distance} km`,
-      duration,
-      durationText,
-      unit: "km"
-    };
+    // Melhorar a formatação dos endereços para a API
+    const formattedOrigin = formatAddressForApi(fromAddress);
+    const formattedDestination = formatAddressForApi(toAddress);
+    
+    log(`Endereços formatados: origem="${formattedOrigin}", destino="${formattedDestination}"`, 'distance-service');
+    
+    const googleResult = await calculateDistanceWithGoogleApi(formattedOrigin, formattedDestination);
+    
+    if (googleResult.success) {
+      log(`Sucesso na API Google: distância=${googleResult.distanceKm} km, duração=${googleResult.durationText}`, 'distance-service');
+      return {
+        success: true,
+        distance: googleResult.distanceKm,
+        distanceText: googleResult.distanceKm ? `${googleResult.distanceKm} km` : undefined,
+        duration: googleResult.durationSeconds ? googleResult.durationSeconds / 60 : undefined, // minutos
+        durationText: googleResult.durationText,
+        unit: "km"
+      };
+    } else {
+      log(`Falha na API do Google: ${googleResult.error}`, 'distance-service');
+      
+      // Em caso de falha, devolve o erro específico da API do Google
+      return {
+        success: false,
+        error: googleResult.error || "Não foi possível calcular a distância com a API do Google."
+      };
+    }
+    
+    // NOTA: Estamos removendo o fallback para garantir a precisão dos dados
   } catch (error: any) {
     log(`Erro no serviço de distância: ${error.message}`, 'distance-service');
     return {
