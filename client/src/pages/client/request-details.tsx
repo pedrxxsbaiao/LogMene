@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { DeliveryProofViewer } from "@/components/delivery-proof-viewer";
+import { RouteMap } from "@/components/route-map";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatISODateToDisplay } from "@/lib/utils";
@@ -170,7 +171,7 @@ export default function RequestDetailsPage() {
             {/* Route Information */}
             <div className="mb-6">
               <h3 className="text-lg font-medium text-neutral-700 mb-3">Rota</h3>
-              <div className="flex flex-col md:flex-row items-start md:items-center text-neutral-700">
+              <div className="flex flex-col md:flex-row items-start md:items-center text-neutral-700 mb-4">
                 <div className="flex items-center">
                   <MapPin className="text-primary mr-2 h-5 w-5" />
                   <span className="font-medium">
@@ -190,6 +191,14 @@ export default function RequestDetailsPage() {
                   </span>
                 </div>
               </div>
+              
+              {/* Mapa da Rota */}
+              <RouteMap 
+                origin={`${request.originStreet}, ${request.originCity}, ${request.originState}`}
+                destination={`${request.destinationStreet}, ${request.destinationCity}, ${request.destinationState}`}
+                height={300}
+                showDistance={true}
+              />
             </div>
             
             {/* Cargo Details */}

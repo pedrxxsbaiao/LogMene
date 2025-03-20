@@ -1,6 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Ruler } from "lucide-react";
+import { ArrowLeft, Ruler, MapPin, CalculatorIcon } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -8,6 +8,7 @@ import { Header } from "@/components/header";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RouteMap } from "@/components/route-map";
 import {
   Form,
   FormControl,
@@ -39,6 +40,8 @@ export default function CreateQuotePage() {
   const params = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   
   const requestId = params.requestId ? parseInt(params.requestId) : 0;
   
@@ -58,7 +61,45 @@ export default function CreateQuotePage() {
     },
   });
   
-  // A transportadora preencherá manualmente a distância em KM
+  // Função para calcular a distância automaticamente usando Google Maps API
+  const calculateDistance = async () => {
+    if (!request) return;
+    
+    setIsCalculatingDistance(true);
+    setShowMap(true);
+    
+    try {
+      const originAddress = `${request.originStreet}, ${request.originCity}, ${request.originState}`;
+      const destinationAddress = `${request.destinationStreet}, ${request.destinationCity}, ${request.destinationState}`;
+      
+      const response = await fetch(`/api/distance?origin=${encodeURIComponent(originAddress)}&destination=${encodeURIComponent(destinationAddress)}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Atualizar o campo de distância no formulário
+        form.setValue('distanceKm', Math.round(data.distance));
+        
+        toast({
+          title: "Distância calculada",
+          description: `A distância entre origem e destino é de aproximadamente ${Math.round(data.distance)} km.`,
+        });
+      } else {
+        toast({
+          title: "Erro ao calcular distância",
+          description: data.error || "Não foi possível calcular a distância entre os endereços.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao calcular distância",
+        description: "Ocorreu um erro ao se comunicar com o serviço de cálculo de distância.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCalculatingDistance(false);
+    }
+  };
 
   // Create quote mutation
   const createQuoteMutation = useMutation({
@@ -307,18 +348,29 @@ export default function CreateQuotePage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Distância (km)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min="0" 
-                            step="1"
-                            {...field}
-                            onChange={(e) => {
-                              const value = e.target.value === "" ? undefined : parseFloat(e.target.value);
-                              field.onChange(value);
-                            }}
-                          />
-                        </FormControl>
+                        <div className="flex gap-2">
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              step="1"
+                              {...field}
+                              onChange={(e) => {
+                                const value = e.target.value === "" ? undefined : parseFloat(e.target.value);
+                                field.onChange(value);
+                              }}
+                            />
+                          </FormControl>
+                          <Button 
+                            type="button" 
+                            onClick={calculateDistance}
+                            disabled={isCalculatingDistance}
+                            className="flex items-center"
+                          >
+                            <CalculatorIcon className="mr-2 h-4 w-4" />
+                            {isCalculatingDistance ? "Calculando..." : "Calcular"}
+                          </Button>
+                        </div>
                         <FormDescription>
                           Distância total estimada entre origem e destino
                         </FormDescription>
@@ -327,6 +379,19 @@ export default function CreateQuotePage() {
                     )}
                   />
                 </div>
+                
+                {/* Mapa da Rota */}
+                {showMap && request && (
+                  <div className="mt-4 mb-6">
+                    <h3 className="text-lg font-medium text-neutral-700 mb-3">Visualização da Rota</h3>
+                    <RouteMap 
+                      origin={`${request.originStreet}, ${request.originCity}, ${request.originState}`}
+                      destination={`${request.destinationStreet}, ${request.destinationCity}, ${request.destinationState}`}
+                      height={400}
+                      showDistance={true}
+                    />
+                  </div>
+                )}
                 
                 <FormField
                   control={form.control}
