@@ -92,44 +92,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createFreightRequest(insertRequest: InsertFreightRequest): Promise<FreightRequest> {
-    // Usar SQL bruto para garantir que todos os campos sejam preenchidos corretamente
-    const originValue = `${insertRequest.originStreet}, ${insertRequest.originCity}, ${insertRequest.originState}`;
-    const destinationValue = `${insertRequest.destinationStreet}, ${insertRequest.destinationCity}, ${insertRequest.destinationState}`;
-    
-    const sql = `
-      INSERT INTO freight_requests (
-        user_id, origin, destination, cargo_type, weight, volume, pickup_date, delivery_date, 
-        notes, require_insurance, status, origin_street, origin_city, origin_state, 
-        destination_street, destination_city, destination_state, invoice_value
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
-      )
-      RETURNING *
-    `;
-    
-    const result = await pool.query(sql, [
-      insertRequest.userId, // $1
-      originValue, // $2
-      destinationValue, // $3
-      insertRequest.cargoType, // $4
-      insertRequest.weight, // $5
-      insertRequest.volume, // $6
-      insertRequest.pickupDate, // $7
-      insertRequest.deliveryDate, // $8
-      insertRequest.notes || null, // $9
-      insertRequest.requireInsurance || false, // $10
-      "pending", // $11
-      insertRequest.originStreet, // $12
-      insertRequest.originCity, // $13
-      insertRequest.originState, // $14
-      insertRequest.destinationStreet, // $15
-      insertRequest.destinationCity, // $16
-      insertRequest.destinationState, // $17
-      insertRequest.invoiceValue // $18
-    ]);
-    
-    // Retornar o objeto criado
-    return result.rows[0];
+    try {
+      // Usar a API do Drizzle ORM para inserção
+      const [newRequest] = await db.insert(freightRequests).values({
+        userId: insertRequest.userId,
+        originCNPJ: insertRequest.originCNPJ || null,
+        originCompanyName: insertRequest.originCompanyName || null,
+        originStreet: insertRequest.originStreet,
+        originCity: insertRequest.originCity,
+        originState: insertRequest.originState,
+        originZipCode: insertRequest.originZipCode || null,
+        destinationCNPJ: insertRequest.destinationCNPJ || null,
+        destinationCompanyName: insertRequest.destinationCompanyName || null,
+        destinationStreet: insertRequest.destinationStreet,
+        destinationCity: insertRequest.destinationCity,
+        destinationState: insertRequest.destinationState,
+        destinationZipCode: insertRequest.destinationZipCode || null,
+        cargoType: insertRequest.cargoType,
+        weight: insertRequest.weight,
+        volume: insertRequest.volume || 0,
+        invoiceValue: insertRequest.invoiceValue,
+        cargoDescription: insertRequest.cargoDescription || null,
+        packageQuantity: insertRequest.packageQuantity || null,
+        pickupDate: insertRequest.pickupDate,
+        deliveryDate: insertRequest.deliveryDate,
+        notes: insertRequest.notes || null,
+        requireInsurance: insertRequest.requireInsurance || false,
+        status: "pending",
+      }).returning();
+      
+      // Retornar o objeto criado
+      return newRequest;
+    } catch (error) {
+      console.error("Erro ao criar solicitação de frete:", error);
+      throw error;
+    }
   }
 
   async getFreightRequestById(id: number): Promise<FreightRequestWithQuote | undefined> {
