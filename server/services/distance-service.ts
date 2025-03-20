@@ -1,6 +1,7 @@
 import { log } from '../vite';
+import axios from 'axios';
 
-// Coordenadas aproximadas de algumas cidades brasileiras
+// Coordenadas aproximadas de algumas cidades brasileiras (para fallback)
 const cityCoordinates: Record<string, { lat: number; lng: number }> = {
   'sao paulo': { lat: -23.5505, lng: -46.6333 },
   'rio de janeiro': { lat: -22.9068, lng: -43.1729 },
@@ -24,7 +25,7 @@ const cityCoordinates: Record<string, { lat: number; lng: number }> = {
   'florianopolis': { lat: -27.5969, lng: -48.5495 }
 };
 
-// Fórmula Haversine para calcular distância entre coordenadas em km
+// Fórmula Haversine para calcular distância entre coordenadas em km (para fallback)
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371; // Raio da Terra em km
   const dLat = toRadians(lat2 - lat1);
@@ -45,7 +46,7 @@ function toRadians(degrees: number): number {
   return degrees * Math.PI / 180;
 }
 
-// Encontra a cidade mais próxima com base no nome (fuzzy match)
+// Encontra a cidade mais próxima com base no nome (para fallback)
 function findClosestCity(cityName: string): { lat: number; lng: number } | null {
   const normalizedName = cityName.toLowerCase().trim();
   
@@ -76,7 +77,7 @@ function findClosestCity(cityName: string): { lat: number; lng: number } | null 
   return null;
 }
 
-// Analisa endereço para tentar extrair cidade
+// Analisa endereço para tentar extrair cidade (para fallback)
 function extractCity(address: string): string {
   // Remover CEP, números e outros elementos comuns em endereços
   const cleanedAddress = address
@@ -102,19 +103,19 @@ function extractCity(address: string): string {
   return cleanedAddress;
 }
 
-// Função principal que estima a distância entre dois endereços
-export function estimateDistance(fromAddress: string, toAddress: string): number | null {
+// Método antigo (fallback) para estimar a distância entre dois endereços
+function fallbackEstimateDistance(fromAddress: string, toAddress: string): number | null {
   try {
     const fromCity = extractCity(fromAddress);
     const toCity = extractCity(toAddress);
     
-    log(`Tentando calcular distância de "${fromCity}" para "${toCity}"`, 'distance-service');
+    log(`Fallback: Tentando calcular distância de "${fromCity}" para "${toCity}"`, 'distance-service');
     
     const fromCoordinates = findClosestCity(fromCity);
     const toCoordinates = findClosestCity(toCity);
     
     if (!fromCoordinates || !toCoordinates) {
-      log(`Não foi possível encontrar coordenadas para um dos endereços`, 'distance-service');
+      log(`Fallback: Não foi possível encontrar coordenadas para um dos endereços`, 'distance-service');
       return null;
     }
     
@@ -123,24 +124,172 @@ export function estimateDistance(fromAddress: string, toAddress: string): number
       toCoordinates.lat, toCoordinates.lng
     );
     
-    log(`Distância estimada: ${distance} km`, 'distance-service');
+    log(`Fallback: Distância estimada: ${distance} km`, 'distance-service');
     
     return distance;
   } catch (error) {
-    log(`Erro ao calcular distância: ${error}`, 'distance-service');
+    log(`Fallback: Erro ao calcular distância: ${error}`, 'distance-service');
     return null;
   }
+}
+
+/**
+ * Função que formata um endereço para melhor precisão na Google Routes API
+ */
+function formatAddressForApi(address: string): string {
+  // Se o endereço já contém o Brasil, retorna como está
+  if (address.toLowerCase().includes('brasil')) {
+    return address;
+  }
+  
+  // Caso contrário, adiciona Brasil ao final
+  return `${address}, Brasil`;
+}
+
+// Função principal usando Google Routes API para cálculo de distância
+export async function calculateDistanceWithGoogleApi(
+  originAddress: string, 
+  destinationAddress: string
+): Promise<{
+  distanceMeters?: number,
+  distanceKm?: number,
+  durationSeconds?: number,
+  durationText?: string,
+  success: boolean,
+  error?: string
+}> {
+  try {
+    // Verifica se a API key do Google Maps está configurada
+    if (!process.env.GOOGLE_MAPS_API_KEY) {
+      log('API key do Google Maps não configurada!', 'distance-service');
+      return { 
+        success: false,
+        error: 'API key não configurada' 
+      };
+    }
+    
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    const url = 'https://routes.googleapis.com/directions/v2:computeRoutes';
+    
+    // Formata os endereços para melhor precisão
+    const origin = formatAddressForApi(originAddress);
+    const destination = formatAddressForApi(destinationAddress);
+    
+    log(`Calculando distância via Google Routes API: de '${origin}' para '${destination}'`, 'distance-service');
+    
+    const response = await axios.post(
+      url,
+      {
+        origin: {
+          address: origin
+        },
+        destination: {
+          address: destination
+        },
+        travelMode: 'DRIVE',
+        routingPreference: 'TRAFFIC_AWARE',
+        computeAlternativeRoutes: false,
+        routeModifiers: {
+          avoidTolls: false,
+          avoidHighways: false,
+          avoidFerries: false
+        },
+        languageCode: 'pt-BR',
+        units: 'METRIC'
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline,routes.legs'
+        }
+      }
+    );
+    
+    if (response.data && response.data.routes && response.data.routes.length > 0) {
+      const route = response.data.routes[0];
+      const distanceMeters = route.distanceMeters;
+      const durationSeconds = route.duration ? 
+        parseInt(route.duration.replace('s', '')) : 
+        undefined;
+      
+      // Extrai informações adicionais da rota
+      let durationText;
+      if (durationSeconds) {
+        const hours = Math.floor(durationSeconds / 3600);
+        const minutes = Math.floor((durationSeconds % 3600) / 60);
+        durationText = hours > 0 ? 
+          `${hours}h ${minutes}min` : 
+          `${minutes} minutos`;
+      }
+      
+      log(`Distância calculada com sucesso via Google Routes API: ${distanceMeters/1000} km, ${durationText}`, 'distance-service');
+      
+      return {
+        success: true,
+        distanceMeters,
+        distanceKm: distanceMeters ? Math.round(distanceMeters / 1000 * 10) / 10 : undefined,
+        durationSeconds,
+        durationText
+      };
+    } else {
+      log('Resposta da API não contém dados de rota válidos', 'distance-service');
+      return {
+        success: false,
+        error: 'Não foi possível calcular a rota entre os endereços fornecidos'
+      };
+    }
+  } catch (error: any) {
+    log(`Erro ao calcular distância via Google Routes API: ${error.message}`, 'distance-service');
+    
+    if (error.response) {
+      log(`Status de erro: ${error.response.status}`, 'distance-service');
+      log(`Detalhes da resposta: ${JSON.stringify(error.response.data)}`, 'distance-service');
+    }
+    
+    return {
+      success: false,
+      error: error.message || 'Erro desconhecido ao calcular distância'
+    };
+  }
+}
+
+// API endpoint para calcular distância (versão antiga - mantida para compatibilidade)
+export function estimateDistance(fromAddress: string, toAddress: string): number | null {
+  return fallbackEstimateDistance(fromAddress, toAddress);
 }
 
 // API endpoint para calcular distância
 export async function getDistanceBetweenAddresses(fromAddress: string, toAddress: string): Promise<{
   success: boolean;
   distance?: number;
+  distanceText?: string;
+  duration?: number;
+  durationText?: string;
   unit?: string;
   error?: string;
 }> {
   try {
-    const distance = estimateDistance(fromAddress, toAddress);
+    // Primeiro, tenta usar a Google Routes API
+    if (process.env.GOOGLE_MAPS_API_KEY) {
+      const googleResult = await calculateDistanceWithGoogleApi(fromAddress, toAddress);
+      
+      if (googleResult.success) {
+        return {
+          success: true,
+          distance: googleResult.distanceKm,
+          distanceText: googleResult.distanceKm ? `${googleResult.distanceKm} km` : undefined,
+          duration: googleResult.durationSeconds ? googleResult.durationSeconds / 60 : undefined, // minutos
+          durationText: googleResult.durationText,
+          unit: "km"
+        };
+      } else {
+        log(`Falha na API do Google, recorrendo ao método de fallback: ${googleResult.error}`, 'distance-service');
+      }
+    }
+    
+    // Se não tiver a API key ou se a chamada falhar, recorre ao método antigo
+    const distance = fallbackEstimateDistance(fromAddress, toAddress);
     
     if (distance === null) {
       return {
@@ -149,13 +298,24 @@ export async function getDistanceBetweenAddresses(fromAddress: string, toAddress
       };
     }
     
+    // Estima o tempo baseado na distância (aproximadamente 60 km/h de média)
+    const duration = distance / 60 * 60; // minutos
+    const hours = Math.floor(duration / 60);
+    const minutes = Math.round(duration % 60);
+    const durationText = hours > 0 ? 
+      `~${hours}h ${minutes}min` : 
+      `~${minutes} minutos`;
+    
     return {
       success: true,
       distance,
+      distanceText: `${distance} km`,
+      duration,
+      durationText,
       unit: "km"
     };
-  } catch (error) {
-    log(`Erro no serviço de distância: ${error}`, 'distance-service');
+  } catch (error: any) {
+    log(`Erro no serviço de distância: ${error.message}`, 'distance-service');
     return {
       success: false,
       error: "Erro ao processar a solicitação de cálculo de distância."
