@@ -43,33 +43,51 @@ export async function sendNotification({
     // Se solicitado, enviar também por email
     if (shouldSendEmail && user.email) {
       try {
+        // Verificar se as credenciais do Gmail estão configuradas
+        const hasGmailCredentials = process.env.GOOGLE_CLIENT_ID && 
+                                   process.env.GOOGLE_CLIENT_SECRET && 
+                                   process.env.GOOGLE_REFRESH_TOKEN;
+        
+        // Verificar se as credenciais do MailerSend estão configuradas
+        const hasMailerSendCredentials = process.env.MAILERSEND_API_KEY;
+        
+        // Se não tiver nenhuma configuração, apenas log e continua
+        if (!hasGmailCredentials && !hasMailerSendCredentials) {
+          log('Nenhum serviço de email configurado. Ignorando o envio de email.', 'notification-service');
+          return true; // Retorna true pois a notificação interna foi criada com sucesso
+        }
+        
         // Primeiro tenta enviar via Gmail API se configurado
-        if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN) {
-          const emailParams = createGmailEmail(
-            type,
-            user.fullName || user.username,
-            requestId || 0,
-            {
-              status: type === 'status_update' ? message : undefined,
-              value: type === 'quote_received' ? parseFloat(message.match(/R\$ ([\d,.]+)/)?.[1]?.replace('.', '').replace(',', '.') || '0') : undefined
+        if (hasGmailCredentials) {
+          try {
+            const emailParams = createGmailEmail(
+              type,
+              user.fullName || user.username,
+              requestId || 0,
+              {
+                status: type === 'status_update' ? message : undefined,
+                value: type === 'quote_received' ? parseFloat(message.match(/R\$ ([\d,.]+)/)?.[1]?.replace('.', '').replace(',', '.') || '0') : undefined
+              }
+            );
+
+            const result = await sendGmailEmail({
+              ...emailParams,
+              to: user.email,
+            });
+
+            if (result) {
+              log(`Email enviado via Gmail API para ${user.email}`, 'notification-service');
+              return true; // Se o Gmail funcionou, não tenta o MailerSend
+            } else {
+              log('Falha no envio via Gmail API, tentando MailerSend como backup', 'notification-service');
             }
-          );
-
-          const result = await sendGmailEmail({
-            ...emailParams,
-            to: user.email,
-          });
-
-          if (result) {
-            log(`Email enviado via Gmail API para ${user.email}`, 'notification-service');
-            return true; // Se o Gmail funcionou, não tenta o MailerSend
-          } else {
-            log('Falha no envio via Gmail API, tentando MailerSend como backup', 'notification-service');
+          } catch (gmailError) {
+            log(`Erro com o Gmail API: ${gmailError}. Tentando MailerSend como backup.`, 'notification-service');
           }
         }
 
         // Se Gmail não está configurado ou falhou, usa MailerSend como backup
-        if (process.env.MAILERSEND_API_KEY) {
+        if (hasMailerSendCredentials) {
           const emailParams = createMailerSendEmail(
             type,
             user.fullName || user.username,
@@ -87,11 +105,11 @@ export async function sendNotification({
 
           if (result) {
             log(`Email enviado via MailerSend para ${user.email}`, 'notification-service');
+            return true;
           } else {
-            throw new Error('Falha no envio com MailerSend');
+            log('Falha no envio com MailerSend', 'notification-service');
+            return true; // Continua mesmo com falha no email
           }
-        } else {
-          throw new Error('Nenhum serviço de email está configurado corretamente');
         }
       } catch (error) {
         log(`Erro ao enviar email de notificação: ${error}`, 'notification-service');
@@ -177,28 +195,44 @@ export async function sendNewFreightRequestNotification(companyUserId: number, r
     message
   });
 
-  // Se temos os detalhes do frete e o Gmail configurado, tentar enviar um email mais detalhado
-  if (freightDetails && process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN) {
-    try {
-      // Buscar dados da empresa
-      const company = await storage.getUser(companyUserId);
-      if (company && company.email) {
-        // Importar diretamente a função para evitar problemas de circular dependency
-        const { sendNewFreightRequestEmail } = await import('./gmail-service');
-        
-        await sendNewFreightRequestEmail(
-          company.email,
-          company.fullName || company.username,
-          requestId,
-          clientName,
-          freightDetails
-        );
-        
-        log(`Email detalhado enviado para transportadora: ${company.email}`, 'notification-service');
+  // Verificar se temos os detalhes do frete
+  if (freightDetails) {
+    // Verificar se as credenciais do Gmail estão configuradas
+    const hasGmailCredentials = process.env.GOOGLE_CLIENT_ID && 
+                               process.env.GOOGLE_CLIENT_SECRET && 
+                               process.env.GOOGLE_REFRESH_TOKEN;
+    
+    if (hasGmailCredentials) {
+      try {
+        // Buscar dados da empresa
+        const company = await storage.getUser(companyUserId);
+        if (company && company.email) {
+          try {
+            // Importar diretamente a função para evitar problemas de circular dependency
+            const { sendNewFreightRequestEmail } = await import('./gmail-service');
+            
+            const emailResult = await sendNewFreightRequestEmail(
+              company.email,
+              company.fullName || company.username,
+              requestId,
+              clientName,
+              freightDetails
+            );
+            
+            if (emailResult) {
+              log(`Email detalhado enviado para transportadora: ${company.email}`, 'notification-service');
+            } else {
+              log(`Falha ao enviar email detalhado para transportadora: ${company.email}`, 'notification-service');
+            }
+          } catch (emailError) {
+            log(`Erro ao enviar email detalhado: ${emailError}`, 'notification-service');
+          }
+        }
+      } catch (userError) {
+        log(`Erro ao buscar dados do usuário para email: ${userError}`, 'notification-service');
       }
-    } catch (error) {
-      log(`Erro ao enviar email detalhado para transportadora: ${error}`, 'notification-service');
-      // Continuamos mesmo que falhe o email detalhado
+    } else {
+      log('Credenciais do Gmail não configuradas. Ignorando envio de email detalhado.', 'notification-service');
     }
   }
 

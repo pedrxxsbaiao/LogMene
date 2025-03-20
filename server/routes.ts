@@ -430,7 +430,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <li><strong>Destino:</strong> ${requestData.destinationCity}, ${requestData.destinationState}</li>
               <li><strong>Tipo de Carga:</strong> ${requestData.cargoType}</li>
               <li><strong>Peso:</strong> ${requestData.weight} kg</li>
-              <li><strong>Volume:</strong> ${requestData.volume} m³</li>
               <li><strong>Valor da Nota Fiscal:</strong> R$ ${requestData.invoiceValue.toFixed(2)}</li>
               <li><strong>Data de Coleta:</strong> ${requestData.pickupDate}</li>
               <li><strong>Data de Entrega:</strong> ${requestData.deliveryDate}</li>
