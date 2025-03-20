@@ -43,29 +43,55 @@ export async function sendNotification({
     // Se solicitado, enviar também por email
     if (shouldSendEmail && user.email) {
       try {
-        if (!process.env.MAILERSEND_API_KEY) {
-          throw new Error('MAILERSEND_API_KEY não configurada');
+        // Primeiro tenta enviar via Gmail API se configurado
+        if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN) {
+          const emailParams = createGmailEmail(
+            type,
+            user.fullName || user.username,
+            requestId || 0,
+            {
+              status: type === 'status_update' ? message : undefined,
+              value: type === 'quote_received' ? parseFloat(message.match(/R\$ ([\d,.]+)/)?.[1]?.replace('.', '').replace(',', '.') || '0') : undefined
+            }
+          );
+
+          const result = await sendGmailEmail({
+            ...emailParams,
+            to: user.email,
+          });
+
+          if (result) {
+            log(`Email enviado via Gmail API para ${user.email}`, 'notification-service');
+            return true; // Se o Gmail funcionou, não tenta o MailerSend
+          } else {
+            log('Falha no envio via Gmail API, tentando MailerSend como backup', 'notification-service');
+          }
         }
 
-        const emailParams = createNotificationEmail(
-          type,
-          user.fullName || user.username,
-          requestId || 0,
-          {
-            status: type === 'status_update' ? message : undefined,
-            value: type === 'quote_received' ? parseFloat(message.match(/R\$ ([\d,.]+)/)?.[1]?.replace('.', '').replace(',', '.') || '0') : undefined
+        // Se Gmail não está configurado ou falhou, usa MailerSend como backup
+        if (process.env.MAILERSEND_API_KEY) {
+          const emailParams = createMailerSendEmail(
+            type,
+            user.fullName || user.username,
+            requestId || 0,
+            {
+              status: type === 'status_update' ? message : undefined,
+              value: type === 'quote_received' ? parseFloat(message.match(/R\$ ([\d,.]+)/)?.[1]?.replace('.', '').replace(',', '.') || '0') : undefined
+            }
+          );
+
+          const result = await sendMailerSendEmail({
+            ...emailParams,
+            to: user.email,
+          });
+
+          if (result) {
+            log(`Email enviado via MailerSend para ${user.email}`, 'notification-service');
+          } else {
+            throw new Error('Falha no envio com MailerSend');
           }
-        );
-
-        const result = await sendEmail({
-          ...emailParams,
-          to: user.email,
-        });
-
-        if (result) {
-          log(`Email enviado via MailerSend para ${user.email}`, 'notification-service');
         } else {
-          throw new Error('Falha no envio com MailerSend');
+          throw new Error('Nenhum serviço de email está configurado corretamente');
         }
       } catch (error) {
         log(`Erro ao enviar email de notificação: ${error}`, 'notification-service');
@@ -140,16 +166,41 @@ export async function sendDeliveryProofNotification(userId: number, requestId: n
 /**
  * Enviar notificação para empresa quando uma nova solicitação de frete é criada
  */
-export async function sendNewFreightRequestNotification(companyUserId: number, requestId: number, clientName: string) {
+export async function sendNewFreightRequestNotification(companyUserId: number, requestId: number, clientName: string, freightDetails?: string) {
   const message = `Nova solicitação de frete recebida do cliente ${clientName}. Acesse o sistema para enviar uma cotação.`;
 
-  // WhatsApp desativado conforme solicitação do cliente
-  // Apenas notificações por email estão ativas
-
-  return sendNotification({
+  // Enviar notificação interna
+  const notificationResult = await sendNotification({
     userId: companyUserId,
     requestId,
     type: 'status_update',
     message
   });
+
+  // Se temos os detalhes do frete e o Gmail configurado, tentar enviar um email mais detalhado
+  if (freightDetails && process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN) {
+    try {
+      // Buscar dados da empresa
+      const company = await storage.getUser(companyUserId);
+      if (company && company.email) {
+        // Importar diretamente a função para evitar problemas de circular dependency
+        const { sendNewFreightRequestEmail } = await import('./gmail-service');
+        
+        await sendNewFreightRequestEmail(
+          company.email,
+          company.fullName || company.username,
+          requestId,
+          clientName,
+          freightDetails
+        );
+        
+        log(`Email detalhado enviado para transportadora: ${company.email}`, 'notification-service');
+      }
+    } catch (error) {
+      log(`Erro ao enviar email detalhado para transportadora: ${error}`, 'notification-service');
+      // Continuamos mesmo que falhe o email detalhado
+    }
+  }
+
+  return notificationResult;
 }

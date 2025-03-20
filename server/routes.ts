@@ -437,12 +437,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             </ul>
           `;
           
-          // Notificar cada empresa via notificação in-app, e-mail e WhatsApp
+          // Notificar cada empresa via notificação in-app e e-mail
           for (const companyUser of companyUsers) {
             log(`Notificando empresa: ${companyUser.id} - ${companyUser.fullName}`, 'freight-notification');
             
-            // Notificação in-app
-            sendNewFreightRequestNotification(companyUser.id, freightRequest.id, clientName);
+            // Notificação in-app e email (agora usando o Gmail)
+            sendNewFreightRequestNotification(
+              companyUser.id,
+              freightRequest.id, 
+              clientName,
+              freightDetails
+            );
             
             // Funcionalidade de notificação por WhatsApp e SMS removida conforme solicitação do cliente
             // Apenas notificações por email e in-app estão sendo usadas
