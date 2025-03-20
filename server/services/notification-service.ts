@@ -231,12 +231,49 @@ export async function sendQuoteNotification(userId: number, requestId: number, v
 
   const message = `Uma cotação no valor de ${formattedValue} foi enviada para sua solicitação de frete. Acesse o sistema para revisar e responder.`;
 
-  return sendNotification({
+  // Enviar notificação pelo sistema (in-app e email)
+  const notificationResult = await sendNotification({
     userId,
     requestId,
     type: 'quote_received',
     message,
   });
+
+  // Verificar se podemos enviar também por SMS
+  try {
+    // Buscar usuário para obter número de telefone
+    const user = await storage.getUser(userId);
+    
+    if (user && user.phone) {
+      const hasTwilioCredentials = process.env.TWILIO_ACCOUNT_SID && 
+                                  process.env.TWILIO_AUTH_TOKEN && 
+                                  process.env.TWILIO_PHONE_NUMBER;
+      
+      if (hasTwilioCredentials) {
+        try {
+          // Criar mensagem SMS mais curta para caber em um SMS
+          const smsMessage = `LogMene: Uma cotação de ${formattedValue} foi enviada para seu frete #${requestId}. Acesse o sistema para mais detalhes.`;
+          
+          // Enviar SMS diretamente
+          const { sendSMS } = await import('./sms-service');
+          
+          const smsResult = await sendSMS(user.phone, smsMessage);
+          
+          if (smsResult) {
+            log(`SMS de nova cotação enviado para ${user.phone}`, 'notification-service');
+          } else {
+            log(`Falha ao enviar SMS de nova cotação para ${user.phone}`, 'notification-service');
+          }
+        } catch (smsError) {
+          log(`Erro ao enviar SMS de nova cotação: ${smsError}`, 'notification-service');
+        }
+      }
+    }
+  } catch (userError) {
+    log(`Erro ao buscar dados do usuário para SMS: ${userError}`, 'notification-service');
+  }
+
+  return notificationResult;
 }
 
 /**
@@ -245,12 +282,49 @@ export async function sendQuoteNotification(userId: number, requestId: number, v
 export async function sendDeliveryProofNotification(userId: number, requestId: number) {
   const message = `Um comprovante de entrega foi adicionado à sua solicitação de frete. Acesse o sistema para visualizar.`;
 
-  return sendNotification({
+  // Enviar notificação pelo sistema (in-app e email)
+  const notificationResult = await sendNotification({
     userId,
     requestId,
     type: 'proof_uploaded',
     message,
   });
+
+  // Verificar se podemos enviar também por SMS
+  try {
+    // Buscar usuário para obter número de telefone
+    const user = await storage.getUser(userId);
+    
+    if (user && user.phone) {
+      const hasTwilioCredentials = process.env.TWILIO_ACCOUNT_SID && 
+                                  process.env.TWILIO_AUTH_TOKEN && 
+                                  process.env.TWILIO_PHONE_NUMBER;
+      
+      if (hasTwilioCredentials) {
+        try {
+          // Importar função SMS diretamente para evitar problemas de circular dependency
+          const { sendDeliveryProofSMS } = await import('./sms-service');
+          
+          const smsResult = await sendDeliveryProofSMS(
+            user.phone,
+            requestId
+          );
+          
+          if (smsResult) {
+            log(`SMS de comprovante de entrega enviado para ${user.phone}`, 'notification-service');
+          } else {
+            log(`Falha ao enviar SMS de comprovante de entrega para ${user.phone}`, 'notification-service');
+          }
+        } catch (smsError) {
+          log(`Erro ao enviar SMS de comprovante de entrega: ${smsError}`, 'notification-service');
+        }
+      }
+    }
+  } catch (userError) {
+    log(`Erro ao buscar dados do usuário para SMS: ${userError}`, 'notification-service');
+  }
+
+  return notificationResult;
 }
 
 /**
