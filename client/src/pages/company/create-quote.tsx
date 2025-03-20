@@ -1,6 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Ruler, MapPin } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -8,7 +8,6 @@ import { Header } from "@/components/header";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RouteMap } from "@/components/route-map";
 import {
   Form,
   FormControl,
@@ -24,7 +23,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertQuoteSchema, FreightRequestWithQuote } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 // Define the form schema based on the quote schema with optional fields
 const formSchema = insertQuoteSchema.omit({ 
@@ -40,7 +39,6 @@ export default function CreateQuotePage() {
   const params = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [showMap] = useState(true);
   
   const requestId = params.requestId ? parseInt(params.requestId) : 0;
   
@@ -330,18 +328,7 @@ export default function CreateQuotePage() {
                   />
                 </div>
                 
-                {/* Mapa da Rota */}
-                {showMap && request && (
-                  <div className="mt-4 mb-6">
-                    <h3 className="text-lg font-medium text-neutral-700 mb-3">Visualização da Rota</h3>
-                    <RouteMap 
-                      origin={`${request.originStreet}, ${request.originCity}, ${request.originState}`}
-                      destination={`${request.destinationStreet}, ${request.destinationCity}, ${request.destinationState}`}
-                      height={400}
-                      showDistance={true}
-                    />
-                  </div>
-                )}
+                {/* Visualização da rota removida */}
                 
                 <FormField
                   control={form.control}
