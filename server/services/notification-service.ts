@@ -1,6 +1,7 @@
 import { storage } from '../storage';
 import { createNotificationEmail as createMailerSendEmail, sendEmail as sendMailerSendEmail } from './mailersend-service';
 import { createNotificationEmail as createGmailEmail, sendGmailEmail } from './gmail-service';
+import { sendSMS } from './sms-service';
 import { log } from '../vite';
 import { InsertNotification } from '@shared/schema';
 
@@ -118,7 +119,40 @@ export async function sendNotification({
     }
 
     // Notificação por WhatsApp desativada conforme solicitação do cliente
-    // Apenas notificações por email estão ativas
+    // Verificar se podemos enviar SMS via Twilio
+    if (user.phone && type === 'status_update') {
+      try {
+        const hasTwilioCredentials = process.env.TWILIO_ACCOUNT_SID && 
+                                    process.env.TWILIO_AUTH_TOKEN && 
+                                    process.env.TWILIO_PHONE_NUMBER;
+        
+        if (hasTwilioCredentials) {
+          log(`Enviando SMS para ${user.phone}`, 'notification-service');
+          
+          // Preparar mensagem SMS - mais curta que as notificações normais
+          let smsMessage = `LogMene: ${message}`;
+          
+          // Adicionar link ou ID de referência se aplicável
+          if (requestId) {
+            smsMessage += ` Ref: #${requestId}`;
+          }
+          
+          // Enviar SMS
+          const smsResult = await sendSMS(user.phone, smsMessage);
+          
+          if (smsResult) {
+            log(`SMS enviado com sucesso para ${user.phone}`, 'notification-service');
+          } else {
+            log(`Falha ao enviar SMS para ${user.phone}`, 'notification-service');
+          }
+        } else {
+          log('Credenciais do Twilio não configuradas. Ignorando envio de SMS.', 'notification-service');
+        }
+      } catch (smsError) {
+        log(`Erro ao enviar SMS: ${smsError}`, 'notification-service');
+        // Continuamos a execução mesmo se o SMS falhar
+      }
+    }
 
     return true;
   } catch (error) {
@@ -140,12 +174,50 @@ export async function sendStatusUpdateNotification(userId: number, requestId: nu
 
   const message = statusMessages[status] || `O status da sua solicitação foi atualizado para "${status}".`;
 
-  return sendNotification({
+  // Enviar notificação pelo sistema (in-app e email)
+  const notificationResult = await sendNotification({
     userId,
     requestId,
     type: 'status_update',
     message,
   });
+
+  // Verificar se podemos enviar também por SMS
+  try {
+    // Buscar usuário para obter número de telefone
+    const user = await storage.getUser(userId);
+    
+    if (user && user.phone) {
+      const hasTwilioCredentials = process.env.TWILIO_ACCOUNT_SID && 
+                                  process.env.TWILIO_AUTH_TOKEN && 
+                                  process.env.TWILIO_PHONE_NUMBER;
+      
+      if (hasTwilioCredentials) {
+        try {
+          // Importar função SMS diretamente para evitar problemas de circular dependency
+          const { sendStatusUpdateSMS } = await import('./sms-service');
+          
+          const smsResult = await sendStatusUpdateSMS(
+            user.phone,
+            status,
+            requestId
+          );
+          
+          if (smsResult) {
+            log(`SMS de atualização de status enviado para ${user.phone}`, 'notification-service');
+          } else {
+            log(`Falha ao enviar SMS de atualização de status para ${user.phone}`, 'notification-service');
+          }
+        } catch (smsError) {
+          log(`Erro ao enviar SMS de atualização de status: ${smsError}`, 'notification-service');
+        }
+      }
+    }
+  } catch (userError) {
+    log(`Erro ao buscar dados do usuário para SMS: ${userError}`, 'notification-service');
+  }
+
+  return notificationResult;
 }
 
 /**
@@ -195,18 +267,50 @@ export async function sendNewFreightRequestNotification(companyUserId: number, r
     message
   });
 
-  // Verificar se temos os detalhes do frete
-  if (freightDetails) {
-    // Verificar se as credenciais do Gmail estão configuradas
-    const hasGmailCredentials = process.env.GOOGLE_CLIENT_ID && 
-                               process.env.GOOGLE_CLIENT_SECRET && 
-                               process.env.GOOGLE_REFRESH_TOKEN;
+  try {
+    // Buscar dados da empresa para envio de SMS e email detalhado
+    const company = await storage.getUser(companyUserId);
     
-    if (hasGmailCredentials) {
-      try {
-        // Buscar dados da empresa
-        const company = await storage.getUser(companyUserId);
-        if (company && company.email) {
+    if (company) {
+      // Verificar se podemos enviar SMS via Twilio
+      if (company.phone) {
+        try {
+          const hasTwilioCredentials = process.env.TWILIO_ACCOUNT_SID && 
+                                     process.env.TWILIO_AUTH_TOKEN && 
+                                     process.env.TWILIO_PHONE_NUMBER;
+          
+          if (hasTwilioCredentials) {
+            // Importar diretamente a função para evitar problemas de circular dependency
+            const { sendNewFreightRequestSMS } = await import('./sms-service');
+            
+            const smsResult = await sendNewFreightRequestSMS(
+              company.phone,
+              company.fullName || company.username,
+              requestId,
+              clientName
+            );
+            
+            if (smsResult) {
+              log(`SMS enviado para transportadora: ${company.phone}`, 'notification-service');
+            } else {
+              log(`Falha ao enviar SMS para transportadora: ${company.phone}`, 'notification-service');
+            }
+          } else {
+            log('Credenciais do Twilio não configuradas. Ignorando envio de SMS.', 'notification-service');
+          }
+        } catch (smsError) {
+          log(`Erro ao enviar SMS: ${smsError}`, 'notification-service');
+        }
+      }
+      
+      // Verificar se temos os detalhes do frete para enviar email detalhado
+      if (freightDetails && company.email) {
+        // Verificar se as credenciais do Gmail estão configuradas
+        const hasGmailCredentials = process.env.GOOGLE_CLIENT_ID && 
+                                   process.env.GOOGLE_CLIENT_SECRET && 
+                                   process.env.GOOGLE_REFRESH_TOKEN;
+        
+        if (hasGmailCredentials) {
           try {
             // Importar diretamente a função para evitar problemas de circular dependency
             const { sendNewFreightRequestEmail } = await import('./gmail-service');
@@ -227,13 +331,13 @@ export async function sendNewFreightRequestNotification(companyUserId: number, r
           } catch (emailError) {
             log(`Erro ao enviar email detalhado: ${emailError}`, 'notification-service');
           }
+        } else {
+          log('Credenciais do Gmail não configuradas. Ignorando envio de email detalhado.', 'notification-service');
         }
-      } catch (userError) {
-        log(`Erro ao buscar dados do usuário para email: ${userError}`, 'notification-service');
       }
-    } else {
-      log('Credenciais do Gmail não configuradas. Ignorando envio de email detalhado.', 'notification-service');
     }
+  } catch (userError) {
+    log(`Erro ao buscar dados do usuário para notificações: ${userError}`, 'notification-service');
   }
 
   return notificationResult;

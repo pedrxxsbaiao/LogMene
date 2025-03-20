@@ -147,3 +147,37 @@ export async function sendNewFreightRequestSMS(
 
   return await sendSMS(companyPhone, message);
 }
+
+/**
+ * Envia uma notificação SMS quando o status de uma solicitação é atualizado
+ */
+export async function sendStatusUpdateSMS(
+  phone: string,
+  status: string,
+  requestId: number
+): Promise<boolean> {
+  // Traduzir o status para uma mensagem amigável
+  const statusMessages: Record<string, string> = {
+    'quoted': `Cotação enviada para solicitação #${requestId}. Aguardando análise.`,
+    'accepted': `Solicitação #${requestId} aceita. Frete em andamento.`,
+    'rejected': `Solicitação #${requestId} recusada. Entre em contato para mais informações.`,
+    'completed': `Frete #${requestId} concluído. Obrigado por usar nossos serviços!`,
+    'pending': `Solicitação #${requestId} aguardando cotação.`
+  };
+
+  const message = `LogMene: ${statusMessages[status] || `Status da solicitação #${requestId} alterado para ${status}.`}`;
+
+  return await sendSMS(phone, message);
+}
+
+/**
+ * Envia uma notificação SMS quando um comprovante de entrega é anexado
+ */
+export async function sendDeliveryProofSMS(
+  phone: string,
+  requestId: number
+): Promise<boolean> {
+  const message = `LogMene: Comprovante de entrega anexado à solicitação #${requestId}. Acesse o sistema para visualizar.`;
+
+  return await sendSMS(phone, message);
+}
