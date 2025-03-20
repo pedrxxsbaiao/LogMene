@@ -7,48 +7,67 @@ import { sendGmailEmail } from '../server/services/gmail-service';
  * @param {import('express').Response} res
  */
 export default async function handler(req, res) {
-  // Aceita apenas requisições POST
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ success: false, message: 'Método não permitido' });
   }
 
   try {
     const { to, subject, message } = req.body;
 
-    // Validação simples
     if (!to || !subject || !message) {
-      return res.status(400).json({ 
-        error: 'Missing required fields', 
-        required: ['to', 'subject', 'message'],
-        received: req.body 
+      return res.status(400).json({
+        success: false,
+        message: 'Todos os campos são obrigatórios: to, subject, message'
       });
     }
 
-    // Tenta enviar o email
+    console.log(`Iniciando teste de email para: ${to}`);
+    
+    // Preparando o conteúdo HTML do email
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+        <h2 style="color: #4a90e2;">Teste de Integração com Gmail</h2>
+        <p>Este é um email de teste para verificar a integração com a API do Gmail.</p>
+        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <p><strong>Mensagem de teste:</strong></p>
+          <p>${message}</p>
+        </div>
+        <p style="margin-top: 20px; font-size: 12px; color: #999;">
+          Este é um email automático. Por favor, não responda diretamente a esta mensagem.
+        </p>
+        <p style="font-size: 12px; color: #999;">
+          Enviado em: ${new Date().toLocaleString('pt-BR')}
+        </p>
+      </div>
+    `;
+
+    // Usando o serviço de Gmail para enviar o email
     const result = await sendGmailEmail({
       to,
       subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-          <h2 style="color: #4a90e2;">Teste de Email - LogMene</h2>
-          <p>Este é um email de teste enviado pelo sistema LogMene.</p>
-          <p>Mensagem: <strong>${message}</strong></p>
-          <p>Se você está vendo este email, a integração com o Gmail API está funcionando corretamente!</p>
-          <p style="margin-top: 20px; font-size: 12px; color: #999;">
-            Este é um email automático. Por favor, não responda diretamente a esta mensagem.
-          </p>
-        </div>
-      `,
-      text: `Teste de Email - LogMene\n\nEste é um email de teste enviado pelo sistema LogMene.\n\nMensagem: ${message}\n\nSe você está vendo este email, a integração com o Gmail API está funcionando corretamente!`
+      html: htmlContent,
+      text: `Teste de Integração com Gmail: ${message}\n\nEnviado em: ${new Date().toLocaleString('pt-BR')}`
     });
 
     if (result) {
-      return res.status(200).json({ success: true, message: 'Email enviado com sucesso' });
+      console.log(`Email de teste enviado com sucesso para: ${to}`);
+      return res.status(200).json({
+        success: true,
+        message: `Email enviado com sucesso para ${to}`
+      });
     } else {
-      return res.status(500).json({ error: 'Falha ao enviar email' });
+      console.error(`Falha ao enviar email de teste para: ${to}`);
+      return res.status(500).json({
+        success: false,
+        message: "Falha ao enviar email de teste"
+      });
     }
   } catch (error) {
-    console.error('Erro ao testar serviço de email Gmail:', error);
-    return res.status(500).json({ error: 'Erro interno ao processar requisição', details: error.message });
+    console.error("Erro ao enviar email de teste:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erro ao processar requisição de teste de email",
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 }
