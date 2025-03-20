@@ -316,15 +316,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       log(`Enviando SMS de teste para ${phoneNumber}`, 'test-sms');
       
+      // Verificar se estamos em modo de simulação ou bypass
+      const isSimulation = process.env.SMS_SIMULATION_MODE === 'true';
+      const isUsingBypass = process.env.SMS_BYPASS_VERIFICATION === 'true';
+      
       // Enviar SMS utilizando o serviço Twilio
       const result = await sendSMS(phoneNumber, smsMessage);
       
       if (result) {
-        log(`SMS de teste enviado com sucesso para ${phoneNumber}`, 'test-sms');
+        // Mensagem de log específica para diferentes modos
+        if (isSimulation) {
+          log(`SMS de teste SIMULADO enviado com sucesso para ${phoneNumber}`, 'test-sms');
+        } else if (isUsingBypass) {
+          log(`SMS de teste enviado com sucesso para ${phoneNumber} (modo bypass ativado)`, 'test-sms');
+        } else {
+          log(`SMS de teste enviado com sucesso para ${phoneNumber}`, 'test-sms');
+        }
+        
+        // Preparar mensagem de resposta
+        const successMessage = isSimulation 
+          ? 'SMS simulado com sucesso (não enviado realmente)' 
+          : isUsingBypass 
+            ? 'SMS processado com sucesso (modo bypass ativado)'
+            : 'SMS enviado com sucesso';
+        
         return res.status(200).json({ 
           success: true, 
-          message: 'SMS enviado com sucesso',
-          phone: phoneNumber
+          message: successMessage,
+          phone: phoneNumber,
+          mode: isSimulation ? 'simulation' : isUsingBypass ? 'bypass' : 'normal'
         });
       } else {
         log(`Falha ao enviar SMS de teste para ${phoneNumber}`, 'test-sms');
@@ -492,11 +512,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             </ul>
           `;
           
-          // Notificar cada empresa via notificação in-app e e-mail
+          // Notificar cada empresa via notificação in-app, e-mail e SMS
           for (const companyUser of companyUsers) {
             log(`Notificando empresa: ${companyUser.id} - ${companyUser.fullName}`, 'freight-notification');
             
-            // Notificação in-app e email (agora usando o Gmail)
+            // Notificação in-app, email e SMS
             sendNewFreightRequestNotification(
               companyUser.id,
               freightRequest.id, 
@@ -504,8 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               freightDetails
             );
             
-            // Funcionalidade de notificação por WhatsApp e SMS removida conforme solicitação do cliente
-            // Apenas notificações por email e in-app estão sendo usadas
+            // Notificação WhatsApp continua desativada conforme solicitação do cliente
           }
         }
         
