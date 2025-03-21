@@ -1,3 +1,4 @@
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { BarChart2, PieChart, TruckIcon, CheckCircle, AlertCircle, ArrowDown, Users } from "lucide-react";
@@ -19,16 +20,24 @@ export default function CompanyHomePage() {
   });
   
   const { data: activeRequests, isLoading: isActiveLoading } = useQuery<FreightRequestWithQuote[]>({
-    queryKey: ["/api/company/active-requests"],
+    queryKey: ["/api/company/active-requests"]
   });
   
   const { data: completedRequests, isLoading: isCompletedLoading } = useQuery<FreightRequestWithQuote[]>({
     queryKey: ["/api/company/completed-requests"],
   });
   
+  // Log para depuração
+  React.useEffect(() => {
+    if (activeRequests) {
+      console.log("Active requests received:", activeRequests);
+      console.log("Quoted requests count:", activeRequests.filter((req: FreightRequestWithQuote) => req.status === 'quoted').length);
+    }
+  }, [activeRequests]);
+  
   // Calculate statistics
-  const quotedRequests = activeRequests?.filter(req => req.status === 'quoted') || [];
-  const acceptedRequests = activeRequests?.filter(req => req.status === 'accepted') || [];
+  const quotedRequests = activeRequests?.filter((req: FreightRequestWithQuote) => req.status === 'quoted') || [];
+  const acceptedRequests = activeRequests?.filter((req: FreightRequestWithQuote) => req.status === 'accepted') || [];
   
   const stats = {
     newRequests: pendingRequests?.length || 0,

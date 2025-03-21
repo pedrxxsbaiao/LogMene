@@ -283,10 +283,16 @@ export default async function handler(req, res) {
           .from(freightRequests)
           .where(inArray(freightRequests.status, ['quoted', 'accepted']));
           
+        console.log(`Número de solicitações ativas encontradas: ${activeRequests.length}`);
+        console.log(`Solicitações cotadas: ${activeRequests.filter(req => req.status === 'quoted').length}`);
+        console.log(`Solicitações aceitas: ${activeRequests.filter(req => req.status === 'accepted').length}`);
+        
         // Adicionar dados relacionados
         const requestsWithData = await Promise.all(
           activeRequests.map(async (req) => await getFreightRequestWithQuote(req.id))
         );
+        
+        console.log(`Dados retornados para /active: ${JSON.stringify(requestsWithData)}`);
         
         return res.status(200).json(requestsWithData);
       } catch (error) {
