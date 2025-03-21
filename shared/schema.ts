@@ -125,6 +125,8 @@ export const deliveryProofs = pgTable("delivery_proofs", {
   id: serial("id").primaryKey(),
   requestId: integer("request_id").notNull(),
   proofImage: text("proof_image").notNull(), // URL or Base64 da imagem
+  clientInvoiceNumber: text("client_invoice_number"), // Número da nota do cliente
+  cteNumber: text("cte_number"), // Número do CTE (Conhecimento de Transporte Eletrônico)
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -132,6 +134,8 @@ export const deliveryProofs = pgTable("delivery_proofs", {
 export const insertDeliveryProofSchema = createInsertSchema(deliveryProofs).pick({
   requestId: true,
   proofImage: true,
+  clientInvoiceNumber: true,
+  cteNumber: true,
   notes: true,
 });
 

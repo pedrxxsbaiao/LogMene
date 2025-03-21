@@ -33,6 +33,12 @@ const deliveryProofSchema = z.object({
   proofImage: z.string().min(5, {
     message: "A imagem é obrigatória",
   }),
+  clientInvoiceNumber: z.string().min(1, {
+    message: "O número da nota do cliente é obrigatório",
+  }),
+  cteNumber: z.string().min(1, {
+    message: "O número do CTE é obrigatório",
+  }),
   notes: z.string().optional(),
 });
 
@@ -67,6 +73,8 @@ export function DeliveryProofUploader({ requestId, requestStatus, onSuccess }: D
     resolver: zodResolver(deliveryProofSchema),
     defaultValues: {
       proofImage: "",
+      clientInvoiceNumber: "",
+      cteNumber: "",
       notes: "",
     },
   });
@@ -77,6 +85,8 @@ export function DeliveryProofUploader({ requestId, requestStatus, onSuccess }: D
       const response = await apiRequest("POST", "/api/delivery-proofs", {
         requestId,
         proofImage: values.proofImage,
+        clientInvoiceNumber: values.clientInvoiceNumber,
+        cteNumber: values.cteNumber,
         notes: values.notes || "",
       });
       
