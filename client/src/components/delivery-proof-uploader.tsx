@@ -299,6 +299,48 @@ export function DeliveryProofUploader({ requestId, requestStatus, onSuccess }: D
               )}
             />
             
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="clientInvoiceNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número da Nota Cliente</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Ex: NF-123456" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Número da nota fiscal do cliente
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="cteNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número do CTE</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Ex: CTE-789012" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Conhecimento de Transporte Eletrônico
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
             <FormField
               control={form.control}
               name="notes"

@@ -67,6 +67,22 @@ export function DeliveryProofViewer({ requestId, requestStatus }: DeliveryProofV
             />
           </div>
           
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-md p-4 bg-muted/10">
+            <div>
+              <h4 className="font-medium text-sm">Número da Nota Cliente:</h4>
+              <p className="text-sm text-muted-foreground">
+                {existingProof.clientInvoiceNumber || 'Não informado'}
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="font-medium text-sm">Número do CTE:</h4>
+              <p className="text-sm text-muted-foreground">
+                {existingProof.cteNumber || 'Não informado'}
+              </p>
+            </div>
+          </div>
+          
           {existingProof.notes && (
             <div>
               <h4 className="font-medium mb-1 text-sm">Observações:</h4>
