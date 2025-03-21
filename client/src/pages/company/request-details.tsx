@@ -242,15 +242,7 @@ export default function CompanyRequestDetailsPage() {
               </div>
             </div>
             
-            {/* Google Maps Integration */}
-            <div className="mb-6">
-              <h3 className="text-lg font-medium text-neutral-700 mb-3">Mapa da Rota</h3>
-              <RouteMap 
-                origin={`${request.originStreet}, ${request.originCity}, ${request.originState}`}
-                destination={`${request.destinationStreet}, ${request.destinationCity}, ${request.destinationState}`}
-                height={400}
-              />
-            </div>
+            {/* Mapa da Rota removido conforme solicitado */}
             
             {/* Dates */}
             <div className="mb-6">
