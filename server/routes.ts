@@ -256,7 +256,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             <li><strong>Destino:</strong> Rio de Janeiro, RJ</li>
             <li><strong>Tipo de carga:</strong> Carga Geral</li>
             <li><strong>Peso:</strong> 500 kg</li>
-            <li><strong>Volume:</strong> 2 m³</li>
             <li><strong>Valor da Nota Fiscal:</strong> R$ 5.000,00</li>
             <li><strong>Data de Coleta:</strong> 25/03/2025</li>
             <li><strong>Data de Entrega:</strong> 27/03/2025</li>

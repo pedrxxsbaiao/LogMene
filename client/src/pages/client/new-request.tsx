@@ -154,8 +154,7 @@ export default function NewRequestPage() {
       ...values,
       // Campos numéricos
       weight: values.weight === undefined ? 0 : values.weight,
-      // Campo de volume removido conforme solicitado
-      volume: 0, // Definindo valor fixo no backend
+      // Volume não é mais enviado pelo frontend
       invoiceValue: values.invoiceValue === undefined ? 0 : values.invoiceValue,
       packageQuantity: values.packageQuantity === undefined ? 0 : values.packageQuantity,
       
