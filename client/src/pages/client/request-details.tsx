@@ -198,7 +198,7 @@ export default function RequestDetailsPage() {
             {/* Cargo Details */}
             <div className="mb-6">
               <h3 className="text-lg font-medium text-neutral-700 mb-3">Detalhes da Carga</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-neutral-500">Tipo</p>
                   <p className="font-medium text-neutral-700">
@@ -212,10 +212,6 @@ export default function RequestDetailsPage() {
                 <div>
                   <p className="text-sm text-neutral-500">Peso</p>
                   <p className="font-medium text-neutral-700">{request.weight} kg</p>
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-500">Volume</p>
-                  <p className="font-medium text-neutral-700">{request.volume} m³</p>
                 </div>
               </div>
             </div>

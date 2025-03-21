@@ -232,10 +232,6 @@ export default function CompanyRequestDetailsPage() {
                   <p className="font-medium text-neutral-700">{request.weight} kg</p>
                 </div>
                 <div>
-                  <p className="text-sm text-neutral-500">Volume</p>
-                  <p className="font-medium text-neutral-700">{request.volume} m³</p>
-                </div>
-                <div>
                   <p className="text-sm text-neutral-500">Valor da Nota Fiscal</p>
                   <p className="font-medium text-neutral-700">{formatCurrency(request.invoiceValue || 0)}</p>
                 </div>
