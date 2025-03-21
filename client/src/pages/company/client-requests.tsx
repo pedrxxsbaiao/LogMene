@@ -201,11 +201,6 @@ export default function ClientRequestsPage() {
                             <p className="text-sm text-muted-foreground">Peso</p>
                             <p className="font-medium">{request.weight} kg</p>
                           </div>
-                          
-                          <div>
-                            <p className="text-sm text-muted-foreground">Volume</p>
-                            <p className="font-medium">{request.volume} m³</p>
-                          </div>
                         </div>
                         
                         {request.quote && (
