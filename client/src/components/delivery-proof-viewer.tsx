@@ -59,28 +59,30 @@ export function DeliveryProofViewer({ requestId, requestStatus }: DeliveryProofV
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="aspect-video rounded-md overflow-hidden border bg-muted/20">
-            <img 
-              src={existingProof.proofImage} 
-              alt="Comprovante de entrega" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-md p-4 bg-muted/10">
+          {/* Informações do comprovante - Acima da imagem */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-md p-4 bg-muted/10 mb-4">
             <div>
               <h4 className="font-medium text-sm">Número da Nota Cliente:</h4>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base font-semibold text-neutral-700">
                 {existingProof.clientInvoiceNumber || 'Não informado'}
               </p>
             </div>
             
             <div>
               <h4 className="font-medium text-sm">Número do CTE:</h4>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base font-semibold text-neutral-700">
                 {existingProof.cteNumber || 'Não informado'}
               </p>
             </div>
+          </div>
+          
+          {/* Imagem do comprovante com tamanho reduzido */}
+          <div className="rounded-md overflow-hidden border bg-muted/20">
+            <img 
+              src={existingProof.proofImage} 
+              alt="Comprovante de entrega" 
+              className="w-full max-h-96 object-contain mx-auto"
+            />
           </div>
           
           {existingProof.notes && (
