@@ -9,7 +9,7 @@ import {
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { db } from "./db";
-import { eq, desc, and, isNull, or } from "drizzle-orm";
+import { eq, desc, and, isNull, or, inArray } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 
@@ -186,10 +186,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getActiveFreightRequests(): Promise<FreightRequestWithQuote[]> {
+    // Incluir tanto solicitações 'quoted' quanto 'accepted'
     const requests = await db.select()
       .from(freightRequests)
-      .where(eq(freightRequests.status, "accepted"))
+      .where(inArray(freightRequests.status, ["quoted", "accepted"]))
       .orderBy(desc(freightRequests.createdAt));
+    
+    console.log(`getActiveFreightRequests: Encontradas ${requests.length} solicitações ativas`);
+    console.log(`getActiveFreightRequests: Status encontrados: ${requests.map(r => r.status).join(', ')}`);
     
     const result = await Promise.all(
       requests.map(async (request) => {
@@ -596,8 +600,12 @@ export class MemStorage implements IStorage {
   }
 
   async getActiveFreightRequests(): Promise<FreightRequestWithQuote[]> {
+    // Incluir tanto solicitações 'quoted' quanto 'accepted'
     const requests = Array.from(this.freightRequests.values())
-      .filter(request => request.status === "accepted");
+      .filter(request => request.status === "quoted" || request.status === "accepted");
+    
+    console.log(`getActiveFreightRequests (MemStorage): Encontradas ${requests.length} solicitações ativas`);
+    console.log(`getActiveFreightRequests (MemStorage): Status encontrados: ${requests.map(r => r.status).join(', ')}`);
     
     const result = await Promise.all(
       requests.map(async (request) => {
