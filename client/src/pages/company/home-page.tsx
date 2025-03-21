@@ -27,10 +27,13 @@ export default function CompanyHomePage() {
   });
   
   // Calculate statistics
+  const quotedRequests = activeRequests?.filter(req => req.status === 'quoted') || [];
+  const acceptedRequests = activeRequests?.filter(req => req.status === 'accepted') || [];
+  
   const stats = {
     newRequests: pendingRequests?.length || 0,
-    quoted: 0, // Agora só temos fretes com status "accepted" na lista de ativos
-    inProgress: activeRequests?.length || 0,
+    quoted: quotedRequests.length,
+    inProgress: acceptedRequests.length,
     completed: completedRequests?.length || 0,
   };
   
@@ -269,6 +272,26 @@ export default function CompanyHomePage() {
           )}
         </Card>
         
+        {/* Quoted Requests Section */}
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium text-foreground">Fretes Cotados</CardTitle>
+          </CardHeader>
+          
+          {isActiveLoading ? (
+            <CardContent>
+              <Skeleton className="h-64 w-full" />
+            </CardContent>
+          ) : (
+            <CardContent className="p-0">
+              <DataTable 
+                columns={activeRequestsColumns}
+                data={quotedRequests || []}
+              />
+            </CardContent>
+          )}
+        </Card>
+        
         {/* In Progress Section */}
         <Card className="mb-6">
           <CardHeader className="pb-2">
@@ -283,7 +306,7 @@ export default function CompanyHomePage() {
             <CardContent className="p-0">
               <DataTable 
                 columns={activeRequestsColumns}
-                data={activeRequests || []}
+                data={acceptedRequests || []}
               />
             </CardContent>
           )}
