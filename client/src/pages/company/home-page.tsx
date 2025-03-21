@@ -27,10 +27,13 @@ export default function CompanyHomePage() {
   });
   
   // Calculate statistics
+  const quotedRequests = activeRequests?.filter(req => req.status === 'quoted') || [];
+  const acceptedRequests = activeRequests?.filter(req => req.status === 'accepted') || [];
+  
   const stats = {
     newRequests: pendingRequests?.length || 0,
-    quoted: 0, // Agora só temos fretes com status "accepted" na lista de ativos
-    inProgress: activeRequests?.length || 0,
+    quoted: quotedRequests.length,
+    inProgress: acceptedRequests.length,
     completed: completedRequests?.length || 0,
   };
   
