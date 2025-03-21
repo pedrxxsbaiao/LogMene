@@ -192,13 +192,15 @@ export default function RequestDetailsPage() {
                 </div>
               </div>
               
-              {/* Mapa da Rota */}
-              <RouteMap 
-                origin={`${request.originStreet}, ${request.originCity}, ${request.originState}`}
-                destination={`${request.destinationStreet}, ${request.destinationCity}, ${request.destinationState}`}
-                height={300}
-                showDistance={true}
-              />
+              {/* Mapa da Rota - escondido quando está na tela de aceitar cotação */}
+              {request.status !== 'quoted' && (
+                <RouteMap 
+                  origin={`${request.originStreet}, ${request.originCity}, ${request.originState}`}
+                  destination={`${request.destinationStreet}, ${request.destinationCity}, ${request.destinationState}`}
+                  height={300}
+                  showDistance={true}
+                />
+              )}
             </div>
             
             {/* Cargo Details */}
