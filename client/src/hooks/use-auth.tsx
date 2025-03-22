@@ -27,17 +27,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error,
     isLoading,
   } = useQuery<SelectUser | undefined, Error>({
-    queryKey: ["/api/user"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
+    queryKey: ["/api/user-services"],
+    queryFn: getQueryFn({ on401: "returnNull", customQuery: "?op=auth" }),
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
+      const res = await apiRequest("POST", "/api/user-services?op=auth", credentials);
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
+      queryClient.setQueryData(["/api/user-services"], user);
       const welcomeMessage = user.role === "company" 
         ? "Bem-vindo(a) de volta, LogMene!" 
         : `Bem-vindo(a) de volta, ${user.fullName}!`;
@@ -57,11 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: InsertUser) => {
-      const res = await apiRequest("POST", "/api/register", credentials);
+      const res = await apiRequest("PUT", "/api/user-services?op=auth", credentials);
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
+      queryClient.setQueryData(["/api/user-services"], user);
       const welcomeMessage = user.role === "company" 
         ? "Bem-vindo(a), LogMene!" 
         : `Bem-vindo(a), ${user.fullName}!`;
@@ -81,10 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
+      await apiRequest("DELETE", "/api/user-services?op=auth");
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
+      queryClient.setQueryData(["/api/user-services"], null);
       toast({
         title: "Sessão encerrada",
         description: "Você saiu do sistema com sucesso.",
