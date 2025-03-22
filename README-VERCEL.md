@@ -76,7 +76,7 @@ npx drizzle-kit push
 Após o deploy, você pode verificar o status do ambiente usando o endpoint especial:
 
 ```
-https://seu-projeto.vercel.app/api/check-env
+https://seu-projeto.vercel.app/api/system-utils?op=check-env
 ```
 
 Este endpoint fornecerá informações sobre:
@@ -84,6 +84,12 @@ Este endpoint fornecerá informações sobre:
 - Configuração do banco de dados
 - Variáveis de ambiente críticas que estão faltando
 - Serviços opcionais que estão configurados
+
+Você também pode verificar o status das chaves de API:
+
+```
+https://seu-projeto.vercel.app/api/system-utils?op=check-keys
+```
 
 #### Verificação de problemas comuns:
 
@@ -102,7 +108,7 @@ Este endpoint fornecerá informações sobre:
 
 4. **Integrações de API**: 
    - Verifique se todas as chaves de API estão corretamente configuradas
-   - Acesse `/api/check-keys` para verificar quais APIs externas estão configuradas
+   - Acesse `/api/system-utils?op=check-keys` para verificar quais APIs externas estão configuradas
 
 ### 6. Domínio Personalizado (Opcional)
 
@@ -118,8 +124,30 @@ Para configurar um domínio personalizado:
 - A Vercel detectará as alterações e fará o novo deploy automaticamente
 - Para atualizações de esquema do banco de dados, pode ser necessário executar `npx drizzle-kit push` novamente
 
+## Considerações sobre a Vercel
+
+### Limite de Funções Serverless
+
+O plano gratuito (Hobby) da Vercel tem um limite de 12 funções serverless por projeto. Para contornar esta limitação, os endpoints menos críticos foram consolidados em endpoints "router" que direcionam para a função adequada com base no parâmetro `op`:
+
+1. **Endpoint de Utilidades do Sistema** (`/api/system-utils`):
+   - `op=check-env`: Verifica o status do ambiente
+   - `op=check-keys`: Verifica as chaves de API configuradas
+
+2. **Endpoint de Comunicação** (`/api/communication`):
+   - `op=email`: Envio de email genérico
+   - `op=sms`: Envio de SMS
+   - `op=gmail-test`: Teste de integração com Gmail
+
+Isso permite que mais funcionalidades sejam implementadas sem ultrapassar o limite de 12 funções.
+
+### Performance
+
+Os endpoints consolidados podem ter uma performance ligeiramente inferior, pois precisam fazer uma verificação adicional para determinar qual operação executar. No entanto, para a maioria das operações, essa diferença é insignificante.
+
 ## Recursos Adicionais
 
 - [Documentação da Vercel](https://vercel.com/docs)
+- [Limites do Plano Hobby da Vercel](https://vercel.com/docs/concepts/limits/overview)
 - [Documentação do Drizzle ORM](https://orm.drizzle.team/docs/overview)
 - [Documentação do Neon PostgreSQL](https://neon.tech/docs)
