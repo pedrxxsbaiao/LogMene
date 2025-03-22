@@ -43,15 +43,38 @@ interface ApiKeyStatus {
 }
 
 export default function SystemStatusPage() {
+  // Usar a API consolidada em system-utils.js
   const { data: envStatus, isLoading: isLoadingEnv } = useQuery<EnvStatus>({
-    queryKey: ["/api/check-env"],
+    queryKey: ["/api/system-utils", "check-env"],
+    queryFn: async () => {
+      const response = await fetch(`/api/system-utils?op=check-env`);
+      if (!response.ok) throw new Error('Falha ao verificar o ambiente');
+      return response.json();
+    },
     staleTime: 30 * 1000, // 30 segundos
   });
 
   const { data: apiKeysStatus, isLoading: isLoadingKeys } = useQuery<ApiKeyStatus>({
-    queryKey: ["/api/check-keys"],
+    queryKey: ["/api/system-utils", "check-keys"],
+    queryFn: async () => {
+      const response = await fetch(`/api/system-utils?op=check-keys`);
+      if (!response.ok) throw new Error('Falha ao verificar as chaves');
+      return response.json();
+    },
     staleTime: 30 * 1000, // 30 segundos
   });
+  
+  // Valores de fallback para garantir segurança com tipagem
+  const safeEnvStatus: EnvStatus = envStatus || {
+    status: "unknown",
+    environment: { nodeEnv: "unknown", isProduction: false, isVercel: false, timestamp: "" },
+    database: { isConfigured: false },
+    missingCriticalKeys: []
+  };
+  
+  const safeApiKeyStatus: ApiKeyStatus = apiKeysStatus || {
+    keyStatus: {}
+  };
 
   return (
     <div className="container pb-16">
@@ -107,7 +130,7 @@ export default function SystemStatusPage() {
                   )}
                 </div>
                 
-                {envStatus.missingCriticalKeys?.length > 0 && (
+                {envStatus.missingCriticalKeys && envStatus.missingCriticalKeys.length > 0 && (
                   <div className="mt-3">
                     <span className="text-sm font-medium text-red-600">
                       Variáveis de ambiente críticas faltando:
@@ -121,7 +144,7 @@ export default function SystemStatusPage() {
                 )}
                 
                 <div className="text-xs text-gray-500 mt-2">
-                  Última verificação: {new Date(envStatus.environment?.timestamp).toLocaleString()}
+                  Última verificação: {envStatus.environment?.timestamp ? new Date(envStatus.environment.timestamp).toLocaleString() : '-'}
                 </div>
               </div>
             ) : (

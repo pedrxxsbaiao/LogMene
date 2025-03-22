@@ -1,0 +1,67 @@
+[21:25:54.363] Cloning github.com/pedrxxsbaiao/LogMene (Branch: main, Commit: abd7b96)
+[21:25:54.637] Previous build caches not available
+[21:25:54.748] Cloning completed: 384.000ms
+[21:25:54.952] Running build in Washington, D.C., USA (East) – iad1
+[21:25:55.077] Running "vercel build"
+[21:25:55.449] Vercel CLI 41.4.1
+[21:25:56.147] Installing dependencies...
+[21:25:59.206] npm warn deprecated querystring@0.2.0: The querystring API is considered Legacy. new code should use the URLSearchParams API instead.
+[21:26:00.071] npm warn deprecated formidable@1.2.6: Please upgrade to latest, formidable@v2 or formidable@v3! Check these notes: https://bit.ly/2ZEqIau
+[21:26:00.692] npm warn deprecated superagent@3.7.0: Please upgrade to v9.0.0+ as we have fixed a public vulnerability with formidable dependency. Note that v9.0.0+ requires Node.js v14.18.0+. See https://github.com/ladjs/superagent/pull/1800 for insight. This project is supported and maintained by the team at Forward Email @ https://forwardemail.net
+[21:26:01.498] npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+[21:26:01.499] npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+[21:26:04.492] npm warn deprecated sib-api-v3-sdk@8.5.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+[21:26:14.794] 
+[21:26:14.794] added 694 packages in 18s
+[21:26:14.795] 
+[21:26:14.795] 83 packages are looking for funding
+[21:26:14.795]   run `npm fund` for details
+[21:26:14.951] 
+[21:26:14.951] > rest-express@1.0.0 build
+[21:26:14.951] > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+[21:26:14.952] 
+[21:26:15.321] [36mvite v5.4.14 [32mbuilding for production...[36m[39m
+[21:26:15.374] transforming...
+[21:26:21.158] [32m✓[39m 2752 modules transformed.
+[21:26:21.626] rendering chunks...
+[21:26:21.640] computing gzip size...
+[21:26:21.661] [2m../dist/public/[22m[32mindex.html                 [39m[1m[2m  2.24 kB[22m[1m[22m[2m │ gzip:   0.96 kB[22m
+[21:26:21.662] [2m../dist/public/[22m[2massets/[22m[35mindex-D-w1hFMU.css  [39m[1m[2m 75.77 kB[22m[1m[22m[2m │ gzip:  13.10 kB[22m
+[21:26:21.662] [2m../dist/public/[22m[2massets/[22m[36mindex-NWKYo26z.js   [39m[1m[33m793.87 kB[39m[22m[2m │ gzip: 229.40 kB[22m
+[21:26:21.662] [33m
+[21:26:21.662] (!) Some chunks are larger than 500 kB after minification. Consider:
+[21:26:21.663] - Using dynamic import() to code-split the application
+[21:26:21.663] - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+[21:26:21.663] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[21:26:21.663] [32m✓ built in 6.32s[39m
+[21:26:21.712] 
+[21:26:21.712]   dist/index.js  146.4kb
+[21:26:21.713] 
+[21:26:21.713] ⚡ Done in 15ms
+[21:26:22.737] Using TypeScript 5.6.3 (local user-provided)
+[21:26:42.200] Using TypeScript 5.6.3 (local user-provided)
+[21:26:43.000] Using TypeScript 5.6.3 (local user-provided)
+[21:26:44.288] Using TypeScript 5.6.3 (local user-provided)
+[21:26:44.570] server/vite.ts(42,5): error TS2322: Type '{ middlewareMode: boolean; hmr: { server: Server<typeof IncomingMessage, typeof ServerResponse>; }; allowedHosts: boolean; }' is not assignable to type 'ServerOptions'.
+[21:26:44.571]   Types of property 'allowedHosts' are incompatible.
+[21:26:44.572]     Type 'boolean' is not assignable to type 'true | string[] | undefined'.
+[21:26:44.572] 
+[21:26:54.722] client/src/pages/system-status.tsx(110,18): error TS18048: 'envStatus.missingCriticalKeys.length' is possibly 'undefined'.
+[21:26:54.723] client/src/pages/system-status.tsx(116,24): error TS18048: 'envStatus.missingCriticalKeys' is possibly 'undefined'.
+[21:26:54.723] client/src/pages/system-status.tsx(124,49): error TS2769: No overload matches this call.
+[21:26:54.723]   Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+[21:26:54.724]     Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+[21:26:54.724]       Type 'undefined' is not assignable to type 'string | number | Date'.
+[21:26:54.725]   Overload 2 of 4, '(value: string | number): Date', gave the following error.
+[21:26:54.725]     Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+[21:26:54.725]       Type 'undefined' is not assignable to type 'string | number'.
+[21:26:54.725] 
+[21:27:06.149] Using TypeScript 5.6.3 (local user-provided)
+[21:27:07.051] Using TypeScript 5.6.3 (local user-provided)
+[21:27:21.619] Using TypeScript 5.6.3 (local user-provided)
+[21:27:25.268] Using TypeScript 5.6.3 (local user-provided)
+[21:27:26.078] Using TypeScript 5.6.3 (local user-provided)
+[21:27:29.787] Build Completed in /vercel/output [2m]
+[21:27:30.887] Deploying outputs...
+[21:27:36.717] Error: No more than 12 Serverless Functions can be added to a Deployment on the Hobby plan. Create a team (Pro plan) to deploy more. Learn More: https://vercel.link/function-count-limit
+[21:27:37.035] 
