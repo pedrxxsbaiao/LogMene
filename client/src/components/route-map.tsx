@@ -35,7 +35,7 @@ export function RouteMap({
       setLoading(true);
       
       // Usar o método GET para maior compatibilidade
-      axios.get(`/api/distance?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`)
+      axios.get(`/api/location-services?op=distance&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`)
         .then(res => {
           if (res.data.success) {
             setDistanceData(res.data);
@@ -46,7 +46,7 @@ export function RouteMap({
         .catch(err => {
           console.error('Erro na requisição de distância:', err);
           // Tentar via POST como fallback
-          return axios.post('/api/distance', { origin, destination });
+          return axios.post('/api/location-services?op=distance', { origin, destination });
         })
         .then(res => {
           if (res?.data?.success) {

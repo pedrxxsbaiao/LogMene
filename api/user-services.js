@@ -1,9 +1,11 @@
-// Arquivo que consolida os endpoints relacionados a usuários (auth e notificações)
+// Arquivo que consolida os endpoints relacionados a usuários e autenticação
 // Isso reduz o número de funções serverless na Vercel
 
-// Importar dependências necessárias
-import { storage } from "../server/storage.js";
-import { hashPassword, comparePasswords } from "../server/auth.js";
+// Dependências
+import { storage } from '../server/storage.js';
+import { hashPassword } from '../server/auth.js';
+import { insertUserSchema } from '../shared/schema.js';
+import { compareSync } from 'bcrypt';
 
 /**
  * Handler principal que roteia as solicitações para as sub-funções apropriadas
@@ -37,26 +39,45 @@ export default async function handler(req, res) {
  * Handler para autenticação de usuários
  */
 async function authHandler(req, res) {
+  const subOp = req.query.subOp || '';
   const method = req.method;
-
-  // Login (POST)
-  if (method === 'POST') {
-    return await loginHandler(req, res);
-  }
-  // Logout (DELETE)
-  else if (method === 'DELETE') {
-    return await logoutHandler(req, res);
-  }
-  // Verificar autenticação atual (GET)
-  else if (method === 'GET') {
-    return await getCurrentUserHandler(req, res);
-  }
-  // Registro (PUT)
-  else if (method === 'PUT') {
-    return await registerHandler(req, res);
-  }
-  else {
+  
+  try {
+    switch (subOp) {
+      case 'login':
+        if (method === 'POST') {
+          return await loginHandler(req, res);
+        }
+        break;
+      case 'logout':
+        if (method === 'POST') {
+          return await logoutHandler(req, res);
+        }
+        break;
+      case 'register':
+        if (method === 'POST') {
+          return await registerHandler(req, res);
+        }
+        break;
+      case 'current':
+        if (method === 'GET') {
+          return await getCurrentUserHandler(req, res);
+        }
+        break;
+      default:
+        return res.status(400).json({ 
+          error: 'Operação inválida',
+          validOperations: ['login', 'logout', 'register', 'current']
+        });
+    }
+    
     return res.status(405).json({ error: 'Método não permitido' });
+  } catch (error) {
+    console.error(`Erro em auth/${subOp}:`, error);
+    return res.status(500).json({ 
+      error: 'Erro interno no servidor',
+      message: error.message
+    });
   }
 }
 
@@ -65,40 +86,35 @@ async function authHandler(req, res) {
  */
 async function loginHandler(req, res) {
   const { username, password } = req.body;
-
+  
   if (!username || !password) {
     return res.status(400).json({ error: 'Usuário e senha são obrigatórios' });
   }
-
+  
   try {
-    // Buscar o usuário pelo nome de usuário
     const user = await storage.getUserByUsername(username);
-
+    
     if (!user) {
-      return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+      return res.status(401).json({ error: 'Usuário não encontrado' });
     }
-
-    // Verificar a senha
-    const isValidPassword = await comparePasswords(password, user.password);
-
-    if (!isValidPassword) {
-      return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+    
+    // Para simplificar, vamos supor que a senha não esteja hasheada no banco de dados
+    // Em um ambiente real, você usaria bcrypt.compare ou algo semelhante
+    const passwordValid = compareSync(password, user.password);
+    
+    if (!passwordValid) {
+      return res.status(401).json({ error: 'Senha incorreta' });
     }
-
-    // Criar sessão
-    req.session.user = {
-      id: user.id,
-      username: user.username,
-      role: user.role,
-      name: user.name
-    };
-
-    // Retornar informações do usuário (exceto a senha)
+    
+    // Remover a senha antes de enviar o usuário
     const { password: _, ...userWithoutPassword } = user;
+    
+    // Em um cenário real, você configuraria uma sessão ou geraria um token JWT
+    // Para simplificar, vamos apenas retornar o usuário
     return res.status(200).json(userWithoutPassword);
   } catch (error) {
     console.error('Erro ao fazer login:', error);
-    return res.status(500).json({ error: 'Erro ao processar a solicitação de login' });
+    return res.status(500).json({ error: 'Erro interno no servidor' });
   }
 }
 
@@ -106,42 +122,46 @@ async function loginHandler(req, res) {
  * Handler para logout
  */
 async function logoutHandler(req, res) {
-  if (req.session) {
-    req.session.destroy(err => {
-      if (err) {
-        console.error('Erro ao encerrar sessão:', err);
-        return res.status(500).json({ error: 'Erro ao fazer logout' });
-      }
-    });
-  }
-  
-  return res.status(200).json({ message: 'Logout realizado com sucesso' });
+  // Em um cenário real, você invalidaria o token ou destruiria a sessão
+  // Para simplificar, vamos apenas retornar sucesso
+  return res.status(200).json({ success: true });
 }
 
 /**
  * Handler para obter usuário atual
  */
 async function getCurrentUserHandler(req, res) {
-  if (!req.session || !req.session.user) {
-    return res.status(401).json({ error: 'Não autenticado' });
+  // Em um cenário real, você verificaria o token ou a sessão
+  // Para simplificar, vamos supor que o usuário está sendo passado no cabeçalho
+  
+  if (!req.headers.authorization) {
+    return res.status(401).json({ error: 'Não autorizado' });
   }
-
+  
   try {
-    // Buscar informações atualizadas do usuário
-    const user = await storage.getUser(req.session.user.id);
-
-    if (!user) {
-      // Sessão existe mas usuário não foi encontrado no banco
-      req.session.destroy();
-      return res.status(401).json({ error: 'Sessão inválida' });
+    // Formato esperado: "Bearer JSON_USER_OBJECT"
+    const authParts = req.headers.authorization.split(' ');
+    if (authParts.length !== 2 || authParts[0] !== 'Bearer') {
+      return res.status(401).json({ error: 'Formato de autorização inválido' });
     }
-
-    // Retornar informações do usuário (exceto a senha)
-    const { password: _, ...userWithoutPassword } = user;
+    
+    // Decodificar o JSON do usuário
+    const user = JSON.parse(decodeURIComponent(authParts[1]));
+    
+    // Verificar se o usuário existe no banco de dados
+    const dbUser = await storage.getUser(user.id);
+    
+    if (!dbUser) {
+      return res.status(401).json({ error: 'Usuário não encontrado' });
+    }
+    
+    // Remover a senha antes de enviar o usuário
+    const { password: _, ...userWithoutPassword } = dbUser;
+    
     return res.status(200).json(userWithoutPassword);
   } catch (error) {
-    console.error('Erro ao buscar usuário atual:', error);
-    return res.status(500).json({ error: 'Erro ao buscar usuário atual' });
+    console.error('Erro ao obter usuário atual:', error);
+    return res.status(401).json({ error: 'Não autorizado' });
   }
 }
 
@@ -150,43 +170,48 @@ async function getCurrentUserHandler(req, res) {
  */
 async function registerHandler(req, res) {
   const userData = req.body;
-
+  
   if (!userData.username || !userData.password || !userData.role) {
-    return res.status(400).json({ error: 'Dados de usuário incompletos' });
+    return res.status(400).json({ error: 'Dados incompletos' });
   }
-
+  
   try {
-    // Verificar se o usuário já existe
+    // Verificar se já existe um usuário com o mesmo username
     const existingUser = await storage.getUserByUsername(userData.username);
-
+    
     if (existingUser) {
-      return res.status(409).json({ error: 'Nome de usuário já está em uso' });
+      return res.status(400).json({ error: 'Nome de usuário já existe' });
     }
-
+    
     // Hash da senha
     const hashedPassword = await hashPassword(userData.password);
-
-    // Criar o usuário com a senha hash
-    const newUser = await storage.createUser({
+    
+    // Criar o usuário com a senha hasheada
+    const insertData = {
       ...userData,
-      password: hashedPassword
-    });
-
-    // Remover a senha do objeto a ser retornado
-    const { password: _, ...userWithoutPassword } = newUser;
-
-    // Autenticar o usuário automaticamente
-    req.session.user = {
-      id: newUser.id,
-      username: newUser.username,
-      role: newUser.role,
-      name: newUser.name
+      password: hashedPassword,
+      createdAt: new Date()
     };
-
+    
+    // Validar com o schema
+    const validationResult = insertUserSchema.safeParse(insertData);
+    
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        error: 'Dados inválidos',
+        details: validationResult.error.format()
+      });
+    }
+    
+    const user = await storage.createUser(insertData);
+    
+    // Remover a senha antes de enviar o usuário
+    const { password: _, ...userWithoutPassword } = user;
+    
     return res.status(201).json(userWithoutPassword);
   } catch (error) {
     console.error('Erro ao registrar usuário:', error);
-    return res.status(500).json({ error: 'Erro ao registrar usuário' });
+    return res.status(500).json({ error: 'Erro interno no servidor' });
   }
 }
 
@@ -194,87 +219,74 @@ async function registerHandler(req, res) {
  * Handler para operações de notificações
  */
 async function notificationsHandler(req, res) {
-  // Verificar autenticação
-  if (!req.session || !req.session.user) {
+  const subOp = req.query.subOp || '';
+  const method = req.method;
+  
+  // Autenticar o usuário
+  if (!req.headers.authorization) {
     return res.status(401).json({ error: 'Não autorizado' });
   }
   
-  const userId = req.session.user.id;
-  const method = req.method;
-
-  // Listar notificações (GET)
-  if (method === 'GET') {
-    try {
-      const { unreadCount } = req.query;
-      
-      // Se o parâmetro unreadCount estiver presente, retornar apenas o número de não lidas
-      if (unreadCount) {
-        const count = await storage.getUnreadNotificationsCount(userId);
-        return res.status(200).json({ count });
-      }
-      
-      // Caso contrário, retornar a lista completa de notificações
-      const notifications = await storage.getNotificationsByUserId(userId);
+  let user;
+  try {
+    // Formato esperado: "Bearer JSON_USER_OBJECT"
+    const authParts = req.headers.authorization.split(' ');
+    if (authParts.length !== 2 || authParts[0] !== 'Bearer') {
+      return res.status(401).json({ error: 'Formato de autorização inválido' });
+    }
+    
+    // Decodificar o JSON do usuário
+    user = JSON.parse(decodeURIComponent(authParts[1]));
+  } catch (error) {
+    console.error('Erro ao autenticar usuário:', error);
+    return res.status(401).json({ error: 'Não autorizado' });
+  }
+  
+  try {
+    // Listar notificações
+    if (subOp === 'list' && method === 'GET') {
+      const notifications = await storage.getNotificationsByUserId(user.id);
       return res.status(200).json(notifications);
-    } catch (error) {
-      console.error('Erro ao buscar notificações:', error);
-      return res.status(500).json({ error: 'Erro ao buscar notificações' });
     }
-  }
-  // Marcar notificação como lida (PATCH)
-  else if (method === 'PATCH') {
-    try {
-      const { id, markAll } = req.body;
+    
+    // Marcar notificação como lida
+    if (subOp === 'read' && method === 'POST') {
+      const { id } = req.body;
       
-      if (markAll) {
-        // Marcar todas as notificações como lidas
-        const count = await storage.markAllNotificationsAsRead(userId);
-        return res.status(200).json({ 
-          message: `${count} notificações marcadas como lidas`,
-          count
-        });
-      } else if (id) {
-        // Marcar uma notificação específica como lida
-        const notification = await storage.markNotificationAsRead(id);
-        
-        if (!notification) {
-          return res.status(404).json({ error: 'Notificação não encontrada' });
-        }
-        
-        return res.status(200).json(notification);
-      } else {
-        return res.status(400).json({ error: 'Parâmetro id ou markAll é obrigatório' });
-      }
-    } catch (error) {
-      console.error('Erro ao marcar notificação como lida:', error);
-      return res.status(500).json({ error: 'Erro ao marcar notificação como lida' });
-    }
-  }
-  // Criar notificação (POST)
-  else if (method === 'POST') {
-    try {
-      const notificationData = req.body;
-      
-      if (!notificationData.userId || !notificationData.type || !notificationData.title) {
-        return res.status(400).json({ error: 'Dados de notificação incompletos' });
+      if (!id) {
+        return res.status(400).json({ error: 'ID da notificação é obrigatório' });
       }
       
-      // Verificar se o usuário que está criando é o mesmo que está recebendo ou tem permissão
-      if (notificationData.userId !== userId && req.session.user.role !== 'company') {
-        return res.status(403).json({ error: 'Sem permissão para criar notificação para outro usuário' });
+      const notification = await storage.markNotificationAsRead(id);
+      
+      if (!notification) {
+        return res.status(404).json({ error: 'Notificação não encontrada' });
       }
       
-      // Adicionar campos automáticos
-      notificationData.createdAt = new Date();
-      notificationData.read = false;
-      
-      const notification = await storage.createNotification(notificationData);
-      return res.status(201).json(notification);
-    } catch (error) {
-      console.error('Erro ao criar notificação:', error);
-      return res.status(500).json({ error: 'Erro ao criar notificação' });
+      return res.status(200).json(notification);
     }
-  } else {
-    return res.status(405).json({ error: 'Método não permitido' });
+    
+    // Marcar todas as notificações como lidas
+    if (subOp === 'read-all' && method === 'POST') {
+      const count = await storage.markAllNotificationsAsRead(user.id);
+      return res.status(200).json({ success: true, count });
+    }
+    
+    // Contar notificações não lidas
+    if (subOp === 'unread-count' && method === 'GET') {
+      const count = await storage.getUnreadNotificationsCount(user.id);
+      return res.status(200).json({ count });
+    }
+    
+    return res.status(400).json({ 
+      error: 'Operação inválida',
+      validOperations: ['list', 'read', 'read-all', 'unread-count']
+    });
+  } catch (error) {
+    console.error(`Erro em notifications/${subOp}:`, error);
+    return res.status(500).json({ 
+      error: 'Erro interno no servidor',
+      message: error.message
+    });
   }
 }

@@ -74,7 +74,7 @@ export function AddressInput({ form, fieldPrefix, label, description }: AddressI
     try {
       // Remover caracteres não numéricos para a chamada da API
       const cleanCNPJ = cnpj.replace(/\D/g, '');
-      const response = await axios.get(`/api/cnpj/${cleanCNPJ}`);
+      const response = await axios.get(`/api/location-services?cnpj=${cleanCNPJ}`);
       
       if (response.data.success) {
         const data = response.data.data as CNPJData;
