@@ -36,14 +36,14 @@ export default function RequestDetailsPage() {
   const requestId = params.id ? parseInt(params.id) : 0;
   
   const { data: request, isLoading } = useQuery<FreightRequestWithQuote>({
-    queryKey: [`/api/requests/${requestId}`],
+    queryKey: [`/api/resources?op=freight-requests&id=${requestId}`],
     enabled: requestId > 0
   });
 
   // Update request status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async (status: string) => {
-      const res = await apiRequest("PATCH", `/api/requests/${requestId}/status`, { status });
+      const res = await apiRequest("PATCH", `/api/resources?op=freight-requests&id=${requestId}&action=status`, { status });
       return res.json();
     },
     onSuccess: (data) => {
@@ -53,8 +53,8 @@ export default function RequestDetailsPage() {
           ? "A transportadora foi notificada e processará seu frete." 
           : "A solicitação foi recusada.",
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/requests/${requestId}`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/resources?op=freight-requests&id=${requestId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/resources?op=freight-requests"] });
     },
     onError: (error: Error) => {
       toast({
