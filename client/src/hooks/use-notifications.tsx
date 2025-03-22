@@ -15,7 +15,7 @@ export function useNotifications() {
   } = useQuery<Notification[]>({
     queryKey: ['/api/user-services'],
     queryFn: ({ queryKey }) => 
-      fetch(`${queryKey[0]}?op=notifications`)
+      fetch(`${queryKey[0]}?op=notifications&subOp=list`)
         .then(res => res.ok ? res.json() : []),
     enabled: !!user,
   });
@@ -27,7 +27,7 @@ export function useNotifications() {
   } = useQuery<{ count: number }>({
     queryKey: ['/api/user-services'],
     queryFn: ({ queryKey }) => 
-      fetch(`${queryKey[0]}?op=notifications&unreadCount=true`)
+      fetch(`${queryKey[0]}?op=notifications&subOp=unread-count`)
         .then(res => res.ok ? res.json() : { count: 0 }),
     enabled: !!user,
     select: (data) => data,
@@ -36,8 +36,8 @@ export function useNotifications() {
   // Marcar notificação como lida
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: number) => {
-      const response = await fetch(`/api/user-services?op=notifications`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/user-services?op=notifications&subOp=read`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -59,12 +59,12 @@ export function useNotifications() {
   // Marcar todas as notificações como lidas
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/user-services?op=notifications', {
-        method: 'PATCH',
+      const response = await fetch('/api/user-services?op=notifications&subOp=read-all', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ markAll: true }),
+        body: JSON.stringify({}),
       });
       
       if (!response.ok) {

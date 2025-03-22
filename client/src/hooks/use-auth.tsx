@@ -28,12 +28,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
   } = useQuery<SelectUser | undefined, Error>({
     queryKey: ["/api/user-services"],
-    queryFn: getQueryFn({ on401: "returnNull", customQuery: "?op=auth" }),
+    queryFn: getQueryFn({ on401: "returnNull", customQuery: "?op=auth&subOp=current" }),
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/user-services?op=auth", credentials);
+      const res = await apiRequest("POST", "/api/user-services?op=auth&subOp=login", credentials);
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: InsertUser) => {
-      const res = await apiRequest("PUT", "/api/user-services?op=auth", credentials);
+      const res = await apiRequest("POST", "/api/user-services?op=auth&subOp=register", credentials);
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("DELETE", "/api/user-services?op=auth");
+      await apiRequest("POST", "/api/user-services?op=auth&subOp=logout");
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user-services"], null);
