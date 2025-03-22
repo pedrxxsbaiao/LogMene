@@ -22,6 +22,7 @@ import TestNotificationPage from "@/pages/test-notification";
 import TestGmailPage from "@/pages/test-gmail";
 import TestDistancePage from "@/pages/test-distance";
 import TestSMSPage from "@/pages/test-sms";
+import SystemStatusPage from "@/pages/system-status";
 import { useAuth } from "@/hooks/use-auth";
 
 function Router() {
@@ -106,6 +107,9 @@ function Router() {
         path="/test-sms" 
         component={TestSMSPage} 
       />
+      
+      {/* System Status Route - Pode ser acessada sem autenticação */}
+      <Route path="/system-status" component={SystemStatusPage} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
