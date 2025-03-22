@@ -35,7 +35,7 @@ export default function CompanyRequestDetailsPage() {
   
   // Buscar detalhes da solicitação
   const { data: request, isLoading } = useQuery<FreightRequestWithQuote>({
-    queryKey: [`/api/requests/${requestId}`],
+    queryKey: [`/api/resources?op=freight-requests&id=${requestId}`],
     enabled: requestId > 0,
   });
 
