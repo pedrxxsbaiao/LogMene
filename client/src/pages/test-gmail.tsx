@@ -73,8 +73,8 @@ export default function TestGmailPage() {
     
     try {
       // Usar o endpoint consolidado com o parâmetro de operação
-      const response = await axios.post('/api/communication?op=gmail-test', {
-        testType: 'simple',
+      const response = await axios.post('/api/communication?op=email', {
+        type: 'simple',
         to: data.to,
         subject: data.subject,
         text: data.message
@@ -111,8 +111,8 @@ export default function TestGmailPage() {
     
     try {
       // Usar o endpoint consolidado com o parâmetro de operação
-      const response = await axios.post('/api/communication?op=gmail-test', {
-        testType: 'freightRequest',
+      const response = await axios.post('/api/communication?op=email', {
+        type: 'freight-request',
         companyEmail: data.email,
         companyName: data.name,
         requestId: data.requestId || 12345,
