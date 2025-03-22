@@ -16,15 +16,15 @@ export default function CompanyHomePage() {
   const [, navigate] = useLocation();
   
   const { data: pendingRequests, isLoading: isPendingLoading } = useQuery<FreightRequestWithQuote[]>({
-    queryKey: ["/api/company/pending-requests"],
+    queryKey: ["/api/resources?op=freight-requests&status=pending"],
   });
   
   const { data: activeRequests, isLoading: isActiveLoading } = useQuery<FreightRequestWithQuote[]>({
-    queryKey: ["/api/company/active-requests"]
+    queryKey: ["/api/resources?op=freight-requests&status=active"]
   });
   
   const { data: completedRequests, isLoading: isCompletedLoading } = useQuery<FreightRequestWithQuote[]>({
-    queryKey: ["/api/company/completed-requests"],
+    queryKey: ["/api/resources?op=freight-requests&status=completed"],
   });
   
   // Log para depuração

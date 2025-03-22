@@ -42,7 +42,7 @@ export default function CompanyRequestDetailsPage() {
   // Mutation para marcar como concluído
   const completeRequestMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("PATCH", `/api/company/requests/${requestId}/complete`, {});
+      const res = await apiRequest("PATCH", `/api/resources?op=freight-requests&id=${requestId}&action=complete`, {});
       return res.json();
     },
     onSuccess: (data) => {
@@ -50,8 +50,8 @@ export default function CompanyRequestDetailsPage() {
         title: "Solicitação concluída",
         description: "A solicitação foi marcada como concluída e o cliente foi notificado.",
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/requests/${requestId}`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/company/active-requests"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/resources?op=freight-requests&id=${requestId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/resources?op=freight-requests&status=active"] });
     },
     onError: (error: any) => {
       toast({
@@ -322,7 +322,7 @@ export default function CompanyRequestDetailsPage() {
                 title: "Comprovante enviado",
                 description: "O comprovante de entrega foi enviado com sucesso e o cliente foi notificado."
               });
-              queryClient.invalidateQueries({ queryKey: [`/api/requests/${requestId}`] });
+              queryClient.invalidateQueries({ queryKey: [`/api/resources?op=freight-requests&id=${requestId}`] });
             }}
           />
         </div>
