@@ -710,6 +710,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(updatedRequest);
   });
 
+  // Editar uma solicitação de frete (cliente apenas)
+  app.put("/api/requests/:id", ensureClient, async (req, res) => {
+    const requestId = parseInt(req.params.id);
+    
+    if (isNaN(requestId)) {
+      return res.status(400).json({ message: "ID da solicitação inválido" });
+    }
+    
+    try {
+      // Obter a solicitação original para validar o proprietário
+      const originalRequest = await storage.getFreightRequestById(requestId);
+      
+      // Verificar se a solicitação existe
+      if (!originalRequest) {
+        return res.status(404).json({ message: "Solicitação de frete não encontrada" });
+      }
+      
+      // Verificar se o cliente é o dono da solicitação
+      if (originalRequest.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Você não tem permissão para editar esta solicitação" });
+      }
+      
+      // Verificar se a solicitação está no status 'pending' (única condição em que pode ser editada)
+      if (originalRequest.status !== "pending") {
+        return res.status(400).json({ 
+          message: "Esta solicitação não pode ser editada pois já foi cotada ou processada"
+        });
+      }
+      
+      // Validar os dados de atualização usando o schema de inserção
+      // Usamos o esquema parcial, já que nem todos os campos precisam ser fornecidos
+      const validationSchema = insertFreightRequestSchema.partial();
+      
+      try {
+        const updatedData = validationSchema.parse(req.body);
+        console.log("Dados de atualização validados:", updatedData);
+        
+        // Não permitir alterar o ID do usuário proprietário
+        if (updatedData.userId !== undefined && updatedData.userId !== originalRequest.userId) {
+          return res.status(400).json({ message: "Não é permitido alterar o proprietário da solicitação" });
+        }
+        
+        // Realizar a atualização no banco de dados
+        const updatedRequest = await storage.updateFreightRequest(requestId, updatedData);
+        
+        res.json(updatedRequest);
+      } catch (validationError) {
+        if (validationError instanceof ZodError) {
+          const validationMessage = fromZodError(validationError);
+          return res.status(400).json({ message: validationMessage.message });
+        }
+        throw validationError;
+      }
+    } catch (error) {
+      console.error("Erro ao editar solicitação:", error);
+      res.status(500).json({ message: "Erro ao editar a solicitação de frete" });
+    }
+  });
+
   // Update freight request status to completed (company only)
   app.patch("/api/company/requests/:id/complete", ensureCompany, async (req, res) => {
     const requestId = parseInt(req.params.id);

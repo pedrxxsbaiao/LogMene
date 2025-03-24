@@ -9,7 +9,7 @@ import {
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { db } from "./db";
-import { eq, desc, and, isNull, or, inArray } from "drizzle-orm";
+import { eq, desc, and, isNull, or, inArray, sql } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 
@@ -140,10 +140,9 @@ export class DatabaseStorage implements IStorage {
     try {
       // Buscar o número de pedido mais alto para este cliente usando SQL raw
       const result = await db.execute(
-        `SELECT MAX(client_order_number) AS max_order_number 
-         FROM freight_requests 
-         WHERE user_id = $1`,
-        [userId]
+        sql`SELECT MAX(client_order_number) AS max_order_number 
+            FROM freight_requests 
+            WHERE user_id = ${userId}`
       );
       
       // Se não houver pedidos anteriores ou o valor máximo for nulo, retorna 0
@@ -503,8 +502,7 @@ export class MemStorage implements IStorage {
     this.quoteCounter = 1;
     this.proofCounter = 1;
     this.notificationCounter = 1;
-    const MemoryStoreClass = MemoryStore(session);
-    this.sessionStore = new MemoryStoreClass({
+    this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
     
