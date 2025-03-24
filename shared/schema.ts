@@ -45,7 +45,7 @@ export const freightRequests = pgTable("freight_requests", {
   // Informações da carga
   cargoType: text("cargo_type").notNull(),
   weight: real("weight").notNull(),
-  volume: real("volume").notNull(),
+  volume: real("volume").default(0), // Definido como valor padrão 0
   invoiceValue: real("invoice_value").notNull(), // Valor da nota fiscal
   cargoDescription: text("cargo_description"),
   packageQuantity: integer("package_quantity"),
@@ -78,7 +78,6 @@ export const insertFreightRequestSchema = createInsertSchema(freightRequests).pi
   // Informações da carga
   cargoType: true,
   weight: true,
-  volume: true,
   invoiceValue: true,
   cargoDescription: true,
   packageQuantity: true,
@@ -88,6 +87,8 @@ export const insertFreightRequestSchema = createInsertSchema(freightRequests).pi
   notes: true,
   requireInsurance: true,
   status: true,
+}).extend({
+  volume: z.number().optional().default(0), // Tornando o campo volume opcional
 });
 
 // Quotes
