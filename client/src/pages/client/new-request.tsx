@@ -40,8 +40,7 @@ import { Calendar } from "@/components/ui/calendar";
 // Define the form schema based on the freight request schema
 const formSchema = insertFreightRequestSchema.omit({ 
   userId: true, 
-  status: true,
-  volume: true // Removendo campo de volume do schema
+  status: true
 });
 
 export default function NewRequestPage() {
@@ -98,7 +97,7 @@ export default function NewRequestPage() {
       // Informações da carga
       cargoType: "",
       weight: undefined, 
-      // volume: undefined, // Campo de volume removido
+      volume: undefined,
       invoiceValue: undefined,
       cargoDescription: "",
       packageQuantity: undefined,
@@ -154,7 +153,7 @@ export default function NewRequestPage() {
       ...values,
       // Campos numéricos
       weight: values.weight === undefined ? 0 : values.weight,
-      // Volume não é mais enviado pelo frontend
+      volume: values.volume === undefined ? 0 : values.volume,
       invoiceValue: values.invoiceValue === undefined ? 0 : values.invoiceValue,
       packageQuantity: values.packageQuantity === undefined ? 0 : values.packageQuantity,
       
