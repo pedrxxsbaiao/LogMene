@@ -157,9 +157,16 @@ export default function CompanyRequestDetailsPage() {
 
         <Card className="mb-6">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xl font-bold text-neutral-700">
-              Solicitação #{request.id}
-            </CardTitle>
+            <div>
+              <CardTitle className="text-xl font-bold text-neutral-700">
+                Solicitação #{request.id}
+              </CardTitle>
+              {request.clientOrderNumber && (
+                <p className="text-sm text-muted-foreground">
+                  Número do cliente: #{request.clientOrderNumber}
+                </p>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <StatusBadge status={request.status} />
               

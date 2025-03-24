@@ -162,9 +162,16 @@ export default function ClientRequestsPage() {
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
                             <Package className="h-5 w-5 text-primary" />
-                            <p className="font-medium">
-                              Solicitação #{request.id}
-                            </p>
+                            <div>
+                              <p className="font-medium">
+                                Solicitação #{request.id}
+                              </p>
+                              {request.clientOrderNumber && (
+                                <p className="text-xs text-muted-foreground">
+                                  Número do cliente: #{request.clientOrderNumber}
+                                </p>
+                              )}
+                            </div>
                           </div>
                           <StatusBadge status={request.status} />
                         </div>

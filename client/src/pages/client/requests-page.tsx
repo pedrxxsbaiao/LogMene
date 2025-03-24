@@ -39,9 +39,17 @@ export default function RequestsPage() {
   // Colunas para desktop
   const requestColumns: ColumnDef<FreightRequestWithQuote>[] = [
     {
+      accessorKey: "clientOrderNumber",
+      header: "Seu Pedido",
+      cell: ({ row }) => {
+        const value = row.original.clientOrderNumber;
+        return <span className="font-medium">#{value || row.original.id}</span>;
+      },
+    },
+    {
       accessorKey: "id",
-      header: "ID",
-      cell: ({ row }) => <span className="font-medium">#{row.getValue("id")}</span>,
+      header: "ID Sistema",
+      cell: ({ row }) => <span className="text-muted-foreground">#{row.getValue("id")}</span>,
     },
     {
       accessorKey: "route",
@@ -103,6 +111,14 @@ export default function RequestsPage() {
   
   // Colunas para mobile - mais simplificado
   const mobileRequestColumns: ColumnDef<FreightRequestWithQuote>[] = [
+    {
+      accessorKey: "clientOrderNumber",
+      header: "Pedido",
+      cell: ({ row }) => {
+        const value = row.original.clientOrderNumber;
+        return <span className="font-medium">#{value || row.original.id}</span>;
+      },
+    },
     {
       accessorKey: "route",
       header: "Rota",
