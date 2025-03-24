@@ -179,19 +179,7 @@ export default function ReportsPage() {
                         <Calendar
                           mode="single"
                           selected={startDate}
-                          onSelect={(date) => {
-                            if (date) {
-                              // Criar uma nova data usando os componentes de data explícitos
-                              const year = date.getFullYear();
-                              const month = date.getMonth();
-                              const day = date.getDate();
-                              // Criamos a data no meio-dia para evitar problemas de fuso horário
-                              const correctedDate = new Date(year, month, day, 12, 0, 0);
-                              setStartDate(correctedDate);
-                            } else {
-                              setStartDate(undefined);
-                            }
-                          }}
+                          onSelect={setStartDate}
                           initialFocus
                         />
                       </PopoverContent>
@@ -214,19 +202,7 @@ export default function ReportsPage() {
                         <Calendar
                           mode="single"
                           selected={endDate}
-                          onSelect={(date) => {
-                            if (date) {
-                              // Criar uma nova data usando os componentes de data explícitos
-                              const year = date.getFullYear();
-                              const month = date.getMonth();
-                              const day = date.getDate();
-                              // Criamos a data no meio-dia para evitar problemas de fuso horário
-                              const correctedDate = new Date(year, month, day, 12, 0, 0);
-                              setEndDate(correctedDate);
-                            } else {
-                              setEndDate(undefined);
-                            }
-                          }}
+                          onSelect={setEndDate}
                           initialFocus
                         />
                       </PopoverContent>
