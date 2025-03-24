@@ -14,7 +14,15 @@ try {
       const match = line.match(/^\s*([^#][^=]+)=(.*)$/);
       if (match) {
         const key = match[1].trim();
-        const value = match[2].trim().replace(/^['"](.*)['"]$/, '$1'); // Remove aspas se existirem
+        let value = match[2].trim().replace(/^['"](.*)['"]$/, '$1'); // Remove aspas se existirem
+        
+        // Verifica se o valor referencia outra variável de ambiente
+        if (value.startsWith('${') && value.endsWith('}')) {
+          const envVarName = value.substring(2, value.length - 1);
+          value = process.env[envVarName] || '';
+          log(`Substituição de variável ${key}=${envVarName}`, 'env-loader');
+        }
+        
         process.env[key] = value;
         log(`Variável ${key} carregada com sucesso`, 'env-loader');
       }
