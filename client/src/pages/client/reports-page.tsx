@@ -179,7 +179,15 @@ export default function ReportsPage() {
                         <Calendar
                           mode="single"
                           selected={startDate}
-                          onSelect={setStartDate}
+                          onSelect={(date) => {
+                            if (date) {
+                              // Usar um objeto de data com data fixa para evitar problemas de fuso horário
+                              const fixedDate = new Date(date.toDateString() + " 12:00:00");
+                              setStartDate(fixedDate);
+                            } else {
+                              setStartDate(undefined);
+                            }
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -202,7 +210,15 @@ export default function ReportsPage() {
                         <Calendar
                           mode="single"
                           selected={endDate}
-                          onSelect={setEndDate}
+                          onSelect={(date) => {
+                            if (date) {
+                              // Usar um objeto de data com data fixa para evitar problemas de fuso horário
+                              const fixedDate = new Date(date.toDateString() + " 12:00:00");
+                              setEndDate(fixedDate);
+                            } else {
+                              setEndDate(undefined);
+                            }
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
