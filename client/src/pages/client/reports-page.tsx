@@ -179,7 +179,15 @@ export default function ReportsPage() {
                         <Calendar
                           mode="single"
                           selected={startDate}
-                          onSelect={setStartDate}
+                          onSelect={(date) => {
+                            if (date) {
+                              // Ajustar para o fuso horário local para evitar diferenças de data
+                              const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
+                              setStartDate(localDate);
+                            } else {
+                              setStartDate(undefined);
+                            }
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -202,7 +210,15 @@ export default function ReportsPage() {
                         <Calendar
                           mode="single"
                           selected={endDate}
-                          onSelect={setEndDate}
+                          onSelect={(date) => {
+                            if (date) {
+                              // Ajustar para o fuso horário local para evitar diferenças de data
+                              const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
+                              setEndDate(localDate);
+                            } else {
+                              setEndDate(undefined);
+                            }
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
