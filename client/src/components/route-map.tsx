@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import axios from 'axios';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ExternalLink, MapPin, Clock, Ruler } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ExternalLink, MapPin, ArrowDownRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface RouteMapProps {
   origin: string;
@@ -26,218 +24,123 @@ export function RouteMap({
   title = "Rota de Entrega",
   interactive = true
 }: RouteMapProps) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [distanceData, setDistanceData] = useState<any | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("mapa");
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  
   // Função para limpar o endereço e formatar para URL
   const formatAddressForUrl = (address: string) => {
     return encodeURIComponent(address);
   };
   
-  // Calcula a distância entre os pontos
-  useEffect(() => {
-    if (showDistance && origin && destination) {
-      setLoading(true);
-      
-      // Usar o método GET para maior compatibilidade
-      axios.get(`/api/distance?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`)
-        .then(res => {
-          if (res.data.success) {
-            setDistanceData(res.data);
-          } else {
-            console.warn('Erro ao calcular distância:', res.data.error);
-          }
-        })
-        .catch(err => {
-          console.error('Erro na requisição de distância:', err);
-          // Tentar via POST como fallback
-          return axios.post('/api/distance', { origin, destination });
-        })
-        .then(res => {
-          if (res?.data?.success) {
-            setDistanceData(res.data);
-          }
-        })
-        .catch(err => {
-          console.error('Erro na requisição de distância (fallback):', err);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+  // Extrai as informações principais do endereço
+  const getAddressMainParts = (address: string) => {
+    const parts = address.split(',');
+    const cityStateIndex = parts.findIndex(part => 
+      part.trim().includes('SP') || 
+      part.trim().includes('RJ') || 
+      part.trim().includes('MG') ||
+      part.trim().toUpperCase().includes('SÃO PAULO') ||
+      part.trim().toUpperCase().includes('SAO PAULO')
+    );
+    
+    if (cityStateIndex >= 0) {
+      const streetPart = parts.slice(0, cityStateIndex).join(',').trim();
+      const cityStatePart = parts[cityStateIndex].trim();
+      return { street: streetPart, cityState: cityStatePart };
     }
-  }, [origin, destination, showDistance]);
-  
-  // Quando o iframe for carregado
-  const handleIframeLoad = () => {
-    setLoading(false);
+    
+    // Fallback se não encontrar cidade/estado
+    if (parts.length > 1) {
+      return { 
+        street: parts[0].trim(), 
+        cityState: parts.slice(1).join(',').trim() 
+      };
+    }
+    
+    return { street: address, cityState: '' };
   };
   
-  // Se o iframe falhar ao carregar
-  const handleIframeError = () => {
-    setLoading(false);
-    setError('Não foi possível carregar o mapa. Verifique sua conexão.');
-  };
+  const originParts = getAddressMainParts(origin);
+  const destinationParts = getAddressMainParts(destination);
   
-  // URL do Google Maps para o iframe
-  const mapUrl = `https://www.google.com/maps/embed/v1/directions?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}&origin=${formatAddressForUrl(origin)}&destination=${formatAddressForUrl(destination)}&mode=driving`;
-
-  // URL do Street View
-  const streetViewUrl = `https://www.google.com/maps/embed/v1/streetview?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}&location=${formatAddressForUrl(destination)}&heading=210&pitch=10&fov=90`;
-
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-          <CardTitle>{title}</CardTitle>
-          {distanceData?.distance && (
-            <div className="flex items-center gap-1">
-              <Badge variant="outline" className="font-normal flex items-center gap-1">
-                <Ruler className="h-3 w-3" />
-                {distanceData.distanceText}
-              </Badge>
-              {distanceData?.durationText && (
-                <Badge variant="outline" className="font-normal flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {distanceData.durationText}
-                </Badge>
-              )}
-            </div>
-          )}
-        </div>
-        <CardDescription>
-          {interactive ? (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              <span className="truncate max-w-[200px]">{origin}</span>
-              <span className="mx-1">→</span>
-              <MapPin className="h-3 w-3" />
-              <span className="truncate max-w-[200px]">{destination}</span>
-            </div>
-          ) : (
-            distanceData?.distanceText && distanceData?.durationText ? (
-              <>
-                Distância: {distanceData.distanceText} | 
-                Tempo estimado: {distanceData.durationText}
-              </>
-            ) : 'Visualização da rota entre origem e destino'
-          )}
-        </CardDescription>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
       
-      {interactive ? (
-        <Tabs defaultValue="mapa" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mx-4 grid grid-cols-2">
-            <TabsTrigger value="mapa">Mapa da Rota</TabsTrigger>
-            <TabsTrigger value="destino">Destino</TabsTrigger>
-          </TabsList>
-          <TabsContent value="mapa" className="p-0 relative">
-            {loading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            )}
-            {error ? (
-              <div className="p-6 text-center text-destructive">
-                <p>{error}</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => window.open(`https://www.google.com/maps/dir/${formatAddressForUrl(origin)}/${formatAddressForUrl(destination)}`, '_blank')}
-                >
-                  Abrir no Google Maps
-                </Button>
-              </div>
-            ) : (
-              <iframe
-                ref={iframeRef}
-                title="Route Map"
-                width={width}
-                height={height}
-                frameBorder="0"
-                src={mapUrl}
-                allowFullScreen
-                onLoad={handleIframeLoad}
-                onError={handleIframeError}
-                style={{ borderRadius: 0 }}
-              />
-            )}
-          </TabsContent>
-          <TabsContent value="destino" className="p-0">
-            <iframe
-              title="Street View"
-              width={width}
-              height={height}
-              frameBorder="0"
-              src={streetViewUrl}
-              allowFullScreen
-              style={{ borderRadius: 0 }}
-            />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <CardContent className="p-0 relative">
-          {loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-10">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <CardContent className="p-6">
+        <div className="flex flex-col space-y-4">
+          {/* Origem */}
+          <div className="flex">
+            <div className="mr-3 mt-1">
+              <Badge variant="outline" className="h-6 w-6 rounded-full p-0 flex items-center justify-center">
+                <MapPin className="h-3.5 w-3.5 text-primary" />
+              </Badge>
             </div>
-          )}
-          {error ? (
-            <div className="p-6 text-center text-destructive">
-              <p>{error}</p>
-              <Button 
-                variant="outline" 
-                className="mt-4"
-                onClick={() => window.open(`https://www.google.com/maps/dir/${formatAddressForUrl(origin)}/${formatAddressForUrl(destination)}`, '_blank')}
-              >
-                Abrir no Google Maps
-              </Button>
+            <div className="flex-1">
+              <div className="text-base font-medium">{originParts.street}</div>
+              <div className="text-sm text-muted-foreground">{originParts.cityState}</div>
             </div>
-          ) : (
-            <iframe
-              ref={iframeRef}
-              title="Route Map"
-              width={width}
-              height={height}
-              frameBorder="0"
-              src={mapUrl}
-              allowFullScreen
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-              style={{ borderRadius: 0 }}
-            />
-          )}
-        </CardContent>
-      )}
-      
-      {(!error && origin && destination) && (
-        <CardFooter className="px-4 py-2 text-xs text-muted-foreground justify-between">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
+          </div>
+          
+          {/* Linha conectora */}
+          <div className="flex pl-3">
+            <div className="border-l-2 h-8 border-dashed border-muted-foreground ml-3"></div>
+          </div>
+          
+          {/* Destino */}
+          <div className="flex">
+            <div className="mr-3 mt-1">
+              <Badge className="h-6 w-6 rounded-full p-0 flex items-center justify-center bg-destructive hover:bg-destructive">
+                <MapPin className="h-3.5 w-3.5 text-white" />
+              </Badge>
+            </div>
+            <div className="flex-1">
+              <div className="text-base font-medium">{destinationParts.street}</div>
+              <div className="text-sm text-muted-foreground">{destinationParts.cityState}</div>
+            </div>
+          </div>
+          
+          {/* Informações adicionais */}
+          <div className="rounded-lg bg-muted/40 p-3 mt-4">
+            <h4 className="text-sm font-medium mb-2 flex items-center">
+              <ArrowDownRight className="h-4 w-4 mr-1" />
+              Informações da Rota
+            </h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="flex flex-col">
+                <span className="text-muted-foreground">Cidade Origem</span>
+                <span className="font-medium">{originParts.cityState}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground">Cidade Destino</span>
+                <span className="font-medium">{destinationParts.cityState}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+
+      <CardFooter className="justify-end bg-muted/30 border-t">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground" asChild>
                 <a 
-                  href={`https://www.google.com/maps/dir/${formatAddressForUrl(origin)}/${formatAddressForUrl(destination)}`} 
+                  href={`https://www.google.com/maps/dir/?api=1&origin=${formatAddressForUrl(origin)}&destination=${formatAddressForUrl(destination)}&travelmode=driving`} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="hover:underline flex items-center gap-1"
+                  className="flex items-center"
                 >
-                  <ExternalLink className="h-3 w-3" />
-                  Abrir no Google Maps
+                  <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                  Ver no Google Maps
                 </a>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Visualizar rota completa no Google Maps</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          {interactive && (
-            <span className="text-[10px]">Powered by Google Maps</span>
-          )}
-        </CardFooter>
-      )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Abrir esta rota no Google Maps em uma nova aba
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </CardFooter>
     </Card>
   );
 }
