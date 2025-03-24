@@ -22,7 +22,7 @@ export function DeliveryProofViewer({ requestId, requestStatus }: DeliveryProofV
     data: existingProof,
     isLoading
   } = useQuery<DeliveryProof>({
-    queryKey: [`/api/resources?op=delivery-proofs&requestId=${requestId}`],
+    queryKey: [`/api/requests/${requestId}/delivery-proof`],
     enabled: requestStatus === "accepted" || requestStatus === "completed",
     // Se a requisição falhar com 404, não tratar como erro, apenas retornar undefined
     retry: (failureCount, error: any) => {

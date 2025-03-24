@@ -37,15 +37,12 @@ export default function TestNotificationPage() {
     setResult(null);
     
     try {
-      const response = await fetch('/api/user-services?op=notifications', {
+      const response = await fetch('/api/test/notification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          ...notificationForm,
-          action: 'test'
-        })
+        body: JSON.stringify(notificationForm)
       });
       
       const data = await response.json();
@@ -80,7 +77,7 @@ export default function TestNotificationPage() {
     setResult(null);
     
     try {
-      const response = await fetch(`/api/communication?op=email&type=simple&to=${encodeURIComponent(emailForm.email)}&subject=Teste&text=Este é um email de teste do sistema LogMene.`);
+      const response = await fetch(`/api/test/send-email?email=${encodeURIComponent(emailForm.email)}`);
       const data = await response.json();
       setResult(data);
       

@@ -44,16 +44,13 @@ export default function TestSMSPage() {
     setResult(null);
     
     try {
-      // Usar o endpoint consolidado com o parâmetro de operação para SMS
-      const response = await fetch("/api/communication?op=sms", {
+      // Usar fetch diretamente em vez de apiRequest para maior controle
+      const response = await fetch("/api/test/send-sms", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          to: data.phoneNumber,
-          body: data.message
-        }),
+        body: JSON.stringify(data),
         credentials: "include",
       });
       

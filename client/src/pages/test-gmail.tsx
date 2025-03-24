@@ -72,14 +72,7 @@ export default function TestGmailPage() {
     setResult(null);
     
     try {
-      // Usar o endpoint consolidado com o parâmetro de operação
-      const response = await axios.post('/api/communication?op=email', {
-        type: 'simple',
-        to: data.to,
-        subject: data.subject,
-        text: data.message
-      });
-      
+      const response = await axios.post('/api/gmail-test', data);
       setResult({
         success: true,
         message: response.data.message || 'Email enviado com sucesso',
@@ -110,18 +103,7 @@ export default function TestGmailPage() {
     setResult(null);
     
     try {
-      // Usar o endpoint consolidado com o parâmetro de operação
-      const response = await axios.post('/api/communication?op=email', {
-        type: 'freight-request',
-        companyEmail: data.email,
-        companyName: data.name,
-        requestId: data.requestId || 12345,
-        clientName: data.clientName || 'Cliente Teste',
-        origin: 'São Paulo, SP',
-        destination: 'Rio de Janeiro, RJ',
-        freightDetails: data.freightDetails
-      });
-      
+      const response = await axios.post('/api/test/send-freight-request-email', data);
       setResult({
         success: true,
         message: response.data.message || 'Email de frete enviado com sucesso',

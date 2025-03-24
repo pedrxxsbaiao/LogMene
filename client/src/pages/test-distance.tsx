@@ -45,7 +45,7 @@ export default function TestDistancePage() {
   const onSubmit = async (data: DistanceTestFormValues) => {
     setLoading(true);
     try {
-      const response = await axios.post('/api/location-services?op=distance', data);
+      const response = await axios.post('/api/distance', data);
       setResult(response.data);
       
       if (response.data.success) {

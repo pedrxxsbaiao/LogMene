@@ -19,7 +19,7 @@ const app = express();
 app.use(express.json({ limit: '10mb' })); // Aumentar limite para uploads de imagens
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://logmene.com.br', 'https://logmene.vercel.app', process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''] 
+    ? ['https://logmene.com.br', 'https://logmene.vercel.app'] 
     : 'http://localhost:5000',
   credentials: true
 }));

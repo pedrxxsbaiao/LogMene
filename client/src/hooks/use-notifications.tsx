@@ -13,10 +13,7 @@ export function useNotifications() {
     error,
     refetch
   } = useQuery<Notification[]>({
-    queryKey: ['/api/user-services'],
-    queryFn: ({ queryKey }) => 
-      fetch(`${queryKey[0]}?op=notifications&subOp=list`)
-        .then(res => res.ok ? res.json() : []),
+    queryKey: ['/api/notifications'],
     enabled: !!user,
   });
   
@@ -25,10 +22,7 @@ export function useNotifications() {
     data: unreadCountData = { count: 0 },
     refetch: refetchCount
   } = useQuery<{ count: number }>({
-    queryKey: ['/api/user-services'],
-    queryFn: ({ queryKey }) => 
-      fetch(`${queryKey[0]}?op=notifications&subOp=unread-count`)
-        .then(res => res.ok ? res.json() : { count: 0 }),
+    queryKey: ['/api/notifications/count'],
     enabled: !!user,
     select: (data) => data,
   });
@@ -36,12 +30,11 @@ export function useNotifications() {
   // Marcar notificação como lida
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: number) => {
-      const response = await fetch(`/api/user-services?op=notifications&subOp=read`, {
-        method: 'POST',
+      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: notificationId }),
       });
       
       if (!response.ok) {
@@ -52,19 +45,19 @@ export function useNotifications() {
     },
     onSuccess: () => {
       // Atualizar cache de notificações e contagem
-      queryClient.invalidateQueries({ queryKey: ['/api/user-services'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications/count'] });
     },
   });
   
   // Marcar todas as notificações como lidas
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/user-services?op=notifications&subOp=read-all', {
-        method: 'POST',
+      const response = await fetch('/api/notifications/mark-all-read', {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({}),
       });
       
       if (!response.ok) {
@@ -74,8 +67,9 @@ export function useNotifications() {
       return await response.json();
     },
     onSuccess: () => {
-      // Atualizar cache de notificações
-      queryClient.invalidateQueries({ queryKey: ['/api/user-services'] });
+      // Atualizar cache de notificações e contagem
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications/count'] });
     },
   });
   

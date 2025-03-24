@@ -60,7 +60,7 @@ export function DeliveryProofUploader({ requestId, requestStatus, onSuccess }: D
     data: existingProof,
     isLoading: isLoadingProof
   } = useQuery<DeliveryProof>({
-    queryKey: [`/api/resources?op=delivery-proofs&requestId=${requestId}`],
+    queryKey: [`/api/requests/${requestId}/delivery-proof`],
     enabled: requestStatus === "accepted" || requestStatus === "completed",
     // Se a requisição falhar com 404, não tratar como erro, apenas retornar undefined
     retry: (failureCount, error: any) => {
@@ -82,7 +82,7 @@ export function DeliveryProofUploader({ requestId, requestStatus, onSuccess }: D
   // Mutação para upload do comprovante
   const uploadMutation = useMutation({
     mutationFn: async (values: z.infer<typeof deliveryProofSchema>) => {
-      const response = await apiRequest("POST", "/api/resources?op=delivery-proofs", {
+      const response = await apiRequest("POST", "/api/delivery-proofs", {
         requestId,
         proofImage: values.proofImage,
         clientInvoiceNumber: values.clientInvoiceNumber,
@@ -98,8 +98,8 @@ export function DeliveryProofUploader({ requestId, requestStatus, onSuccess }: D
         description: "Comprovante de entrega enviado com sucesso.",
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/resources?op=delivery-proofs&requestId=${requestId}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/resources?op=freight-requests&id=${requestId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/requests/${requestId}/delivery-proof`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/requests/${requestId}`] });
       form.reset();
       onSuccess?.();
     },

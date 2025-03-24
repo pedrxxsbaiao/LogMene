@@ -16,15 +16,15 @@ export default function ClientHomePage() {
   const [, navigate] = useLocation();
   
   const { data: pendingRequests, isLoading: isPendingLoading } = useQuery<FreightRequestWithQuote[]>({
-    queryKey: ["/api/resources?op=freight-requests&status=pending&client=true"],
+    queryKey: ["/api/pending-requests"],
   });
   
   const { data: activeRequests, isLoading: isActiveLoading } = useQuery<FreightRequestWithQuote[]>({
-    queryKey: ["/api/resources?op=freight-requests&status=active&client=true"],
+    queryKey: ["/api/active-requests"],
   });
   
   const { data: completedRequests, isLoading: isCompletedLoading } = useQuery<FreightRequestWithQuote[]>({
-    queryKey: ["/api/resources?op=freight-requests&status=completed&client=true"],
+    queryKey: ["/api/completed-requests"],
   });
   
   // Combinando todos os fretes para a lista geral

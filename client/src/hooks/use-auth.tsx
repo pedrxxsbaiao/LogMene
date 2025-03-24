@@ -27,42 +27,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error,
     isLoading,
   } = useQuery<SelectUser | undefined, Error>({
-    queryKey: ["/api/user-services"],
-    queryFn: async () => {
-      try {
-        // Primeiro tenta o endpoint original
-        console.log("Tentando obter usuário atual no endpoint original...");
-        const res = await fetch("/api/user", { 
-          credentials: "include",
-          headers: { "Content-Type": "application/json" }
-        });
-        if (!res.ok) throw new Error('Não autenticado no endpoint original');
-        return await res.json();
-      } catch (err) {
-        console.log("Fallback para o endpoint consolidado...");
-        // Fallback para o endpoint consolidado
-        const fn = getQueryFn({ on401: "returnNull", customQuery: "?op=auth&subOp=current" });
-        return fn();
-      }
-    },
+    queryKey: ["/api/user"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      try {
-        // Primeiro tenta o endpoint original
-        console.log("Tentando login no endpoint original...");
-        const res = await apiRequest("POST", "/api/login", credentials);
-        return await res.json();
-      } catch (err) {
-        console.log("Fallback para o endpoint consolidado...");
-        // Fallback para o endpoint consolidado
-        const res = await apiRequest("POST", "/api/user-services?op=auth&subOp=login", credentials);
-        return await res.json();
-      }
+      const res = await apiRequest("POST", "/api/login", credentials);
+      return await res.json();
     },
     onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user-services"], user);
+      queryClient.setQueryData(["/api/user"], user);
       const welcomeMessage = user.role === "company" 
         ? "Bem-vindo(a) de volta, LogMene!" 
         : `Bem-vindo(a) de volta, ${user.fullName}!`;
@@ -82,11 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: InsertUser) => {
-      const res = await apiRequest("POST", "/api/user-services?op=auth&subOp=register", credentials);
+      const res = await apiRequest("POST", "/api/register", credentials);
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user-services"], user);
+      queryClient.setQueryData(["/api/user"], user);
       const welcomeMessage = user.role === "company" 
         ? "Bem-vindo(a), LogMene!" 
         : `Bem-vindo(a), ${user.fullName}!`;
@@ -106,18 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      try {
-        // Primeiro tenta o endpoint original
-        console.log("Tentando logout no endpoint original...");
-        await apiRequest("POST", "/api/logout", {});
-      } catch (err) {
-        console.log("Fallback para o endpoint consolidado...");
-        // Fallback para o endpoint consolidado
-        await apiRequest("POST", "/api/user-services?op=auth&subOp=logout", {});
-      }
+      await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/user-services"], null);
+      queryClient.setQueryData(["/api/user"], null);
       toast({
         title: "Sessão encerrada",
         description: "Você saiu do sistema com sucesso.",

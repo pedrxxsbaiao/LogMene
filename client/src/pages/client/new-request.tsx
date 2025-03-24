@@ -40,7 +40,8 @@ import { Calendar } from "@/components/ui/calendar";
 // Define the form schema based on the freight request schema
 const formSchema = insertFreightRequestSchema.omit({ 
   userId: true, 
-  status: true
+  status: true,
+  volume: true // Removendo campo de volume do schema
 });
 
 export default function NewRequestPage() {
@@ -97,7 +98,7 @@ export default function NewRequestPage() {
       // Informações da carga
       cargoType: "",
       weight: undefined, 
-      volume: undefined,
+      // volume: undefined, // Campo de volume removido
       invoiceValue: undefined,
       cargoDescription: "",
       packageQuantity: undefined,
@@ -153,7 +154,7 @@ export default function NewRequestPage() {
       ...values,
       // Campos numéricos
       weight: values.weight === undefined ? 0 : values.weight,
-      volume: values.volume === undefined ? 0 : values.volume,
+      // Volume não é mais enviado pelo frontend
       invoiceValue: values.invoiceValue === undefined ? 0 : values.invoiceValue,
       packageQuantity: values.packageQuantity === undefined ? 0 : values.packageQuantity,
       
@@ -264,29 +265,7 @@ export default function NewRequestPage() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="volume"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Volume (m³)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              min="0" 
-                              step="0.01"
-                              placeholder="Informe o volume"
-                              value={field.value === 0 || field.value === undefined ? "" : field.value}
-                              onChange={(e) => {
-                                const value = e.target.value === "" ? undefined : parseFloat(e.target.value);
-                                field.onChange(value);
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* Campo de Volume removido conforme solicitado */}
                     <FormField
                       control={form.control}
                       name="invoiceValue"

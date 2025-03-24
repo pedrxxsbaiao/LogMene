@@ -9,9 +9,9 @@ export default async function handler(req, res) {
     'GOOGLE_CLIENT_ID',
     'GOOGLE_CLIENT_SECRET',
     'GOOGLE_REFRESH_TOKEN',
-    'TWILIO_ACCOUNT_SID',
-    'TWILIO_AUTH_TOKEN',
-    'TWILIO_PHONE_NUMBER'
+    'MAILERSEND_API_KEY',
+    'SENDGRID_API_KEY',
+    'TWILIO_ACCOUNT_SID'
   ];
   
   // Objeto que conterá o status de cada chave

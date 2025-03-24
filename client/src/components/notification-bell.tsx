@@ -41,14 +41,12 @@ export function NotificationBell() {
   };
   
   // Ordenar notificações: não lidas primeiro, depois por data
-  const sortedNotifications = notifications && notifications.length > 0
-    ? [...notifications].sort((a, b) => {
-        if (a.read === b.read) {
-          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-        }
-        return a.read ? 1 : -1;
-      })
-    : [];
+  const sortedNotifications = [...notifications].sort((a, b) => {
+    if (a.read === b.read) {
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    }
+    return a.read ? 1 : -1;
+  });
 
   function handleNotificationClick(notificationId: number, requestId: number | null) {
     // Marcar como lida
