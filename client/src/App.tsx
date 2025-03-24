@@ -13,6 +13,8 @@ import NewRequestPage from "@/pages/client/new-request";
 import RequestDetailsPage from "@/pages/client/request-details";
 import RequestsPage from "@/pages/client/requests-page";
 import ReportsPage from "@/pages/client/reports-page";
+// Importe este componente após criá-lo
+import EditRequestPage from "@/pages/client/edit-request";
 import CompanyRequestDetailsPage from "@/pages/company/request-details";
 import CreateQuotePage from "@/pages/company/create-quote";
 import ClientsPage from "@/pages/company/clients";
@@ -51,6 +53,11 @@ function Router() {
       <ProtectedRoute 
         path="/requests/:id" 
         component={RequestDetailsPage} 
+        allowedRoles={["client"]} 
+      />
+      <ProtectedRoute 
+        path="/requests/:id/edit" 
+        component={EditRequestPage} 
         allowedRoles={["client"]} 
       />
       <ProtectedRoute 

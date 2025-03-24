@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, MapPin, Flag, ArrowDownIcon, Package, CheckCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Flag, ArrowDownIcon, Package, CheckCircle, Edit } from "lucide-react";
 import { Header } from "@/components/header";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { Button } from "@/components/ui/button";
@@ -171,7 +171,20 @@ export default function RequestDetailsPage() {
                 </p>
               )}
             </div>
-            <StatusBadge status={request.status} />
+            <div className="flex items-center gap-3">
+              {request.status === "pending" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-1"
+                  onClick={() => navigate(`/requests/${request.id}/edit`)}
+                >
+                  <Edit className="h-4 w-4" />
+                  Editar
+                </Button>
+              )}
+              <StatusBadge status={request.status} />
+            </div>
           </CardHeader>
           
           <CardContent>
