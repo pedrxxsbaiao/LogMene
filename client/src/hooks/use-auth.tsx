@@ -28,13 +28,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
   } = useQuery<SelectUser | undefined, Error>({
     queryKey: ["/api/user-services"],
-    queryFn: getQueryFn({ on401: "returnNull", customQuery: "?op=auth&subOp=current" }),
+    queryFn: async () => {
+      try {
+        // Primeiro tenta o endpoint original
+        console.log("Tentando obter usuário atual no endpoint original...");
+        const res = await fetch("/api/user", { 
+          credentials: "include",
+          headers: { "Content-Type": "application/json" }
+        });
+        if (!res.ok) throw new Error('Não autenticado no endpoint original');
+        return await res.json();
+      } catch (err) {
+        console.log("Fallback para o endpoint consolidado...");
+        // Fallback para o endpoint consolidado
+        const fn = getQueryFn({ on401: "returnNull", customQuery: "?op=auth&subOp=current" });
+        return fn();
+      }
+    },
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/user-services?op=auth&subOp=login", credentials);
-      return await res.json();
+      try {
+        // Primeiro tenta o endpoint original
+        console.log("Tentando login no endpoint original...");
+        const res = await apiRequest("POST", "/api/login", credentials);
+        return await res.json();
+      } catch (err) {
+        console.log("Fallback para o endpoint consolidado...");
+        // Fallback para o endpoint consolidado
+        const res = await apiRequest("POST", "/api/user-services?op=auth&subOp=login", credentials);
+        return await res.json();
+      }
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user-services"], user);
@@ -81,7 +106,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/user-services?op=auth&subOp=logout");
+      try {
+        // Primeiro tenta o endpoint original
+        console.log("Tentando logout no endpoint original...");
+        await apiRequest("POST", "/api/logout", {});
+      } catch (err) {
+        console.log("Fallback para o endpoint consolidado...");
+        // Fallback para o endpoint consolidado
+        await apiRequest("POST", "/api/user-services?op=auth&subOp=logout", {});
+      }
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user-services"], null);
