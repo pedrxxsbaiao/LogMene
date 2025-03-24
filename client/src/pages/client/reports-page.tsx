@@ -181,9 +181,13 @@ export default function ReportsPage() {
                           selected={startDate}
                           onSelect={(date) => {
                             if (date) {
-                              // Ajustar para o fuso horário local para evitar diferenças de data
-                              const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
-                              setStartDate(localDate);
+                              // Criar uma nova data usando os componentes de data explícitos
+                              const year = date.getFullYear();
+                              const month = date.getMonth();
+                              const day = date.getDate();
+                              // Criamos a data no meio-dia para evitar problemas de fuso horário
+                              const correctedDate = new Date(year, month, day, 12, 0, 0);
+                              setStartDate(correctedDate);
                             } else {
                               setStartDate(undefined);
                             }
@@ -212,9 +216,13 @@ export default function ReportsPage() {
                           selected={endDate}
                           onSelect={(date) => {
                             if (date) {
-                              // Ajustar para o fuso horário local para evitar diferenças de data
-                              const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
-                              setEndDate(localDate);
+                              // Criar uma nova data usando os componentes de data explícitos
+                              const year = date.getFullYear();
+                              const month = date.getMonth();
+                              const day = date.getDate();
+                              // Criamos a data no meio-dia para evitar problemas de fuso horário
+                              const correctedDate = new Date(year, month, day, 12, 0, 0);
+                              setEndDate(correctedDate);
                             } else {
                               setEndDate(undefined);
                             }

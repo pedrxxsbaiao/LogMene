@@ -377,9 +377,12 @@ export default function NewRequestPage() {
                               selected={field.value ? new Date(field.value) : undefined}
                               onSelect={(date) => {
                                 if (date) {
-                                  // Ajustar para o fuso horário local para evitar diferenças de data
-                                  const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
-                                  field.onChange(format(localDate, "yyyy-MM-dd"));
+                                  // Formatação da data corrigida para evitar problemas de fuso horário
+                                  const day = date.getDate().toString().padStart(2, '0');
+                                  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                                  const year = date.getFullYear();
+                                  const dateFormatted = `${year}-${month}-${day}`;
+                                  field.onChange(dateFormatted);
                                 } else {
                                   field.onChange("");
                                 }
@@ -421,9 +424,12 @@ export default function NewRequestPage() {
                               selected={field.value ? new Date(field.value) : undefined}
                               onSelect={(date) => {
                                 if (date) {
-                                  // Ajustar para o fuso horário local para evitar diferenças de data
-                                  const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
-                                  field.onChange(format(localDate, "yyyy-MM-dd"));
+                                  // Formatação da data corrigida para evitar problemas de fuso horário
+                                  const day = date.getDate().toString().padStart(2, '0');
+                                  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                                  const year = date.getFullYear();
+                                  const dateFormatted = `${year}-${month}-${day}`;
+                                  field.onChange(dateFormatted);
                                 } else {
                                   field.onChange("");
                                 }
