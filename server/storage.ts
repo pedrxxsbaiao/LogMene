@@ -33,6 +33,7 @@ export interface IStorage {
   getActiveFreightRequests(): Promise<FreightRequestWithQuote[]>;
   getCompletedFreightRequests(): Promise<FreightRequestWithQuote[]>;
   updateFreightRequestStatus(id: number, status: typeof requestStatus[number]): Promise<FreightRequest | undefined>;
+  updateFreightRequest(id: number, requestData: Partial<InsertFreightRequest>): Promise<FreightRequest | undefined>;
   
   // Quote operations
   createQuote(quote: InsertQuote): Promise<Quote>;
@@ -301,6 +302,100 @@ export class DatabaseStorage implements IStorage {
       message,
       read: false
     });
+    
+    return updatedRequest;
+  }
+  
+  async updateFreightRequest(id: number, requestData: Partial<InsertFreightRequest>): Promise<FreightRequest | undefined> {
+    // Verificar se a solicitação existe
+    const request = this.freightRequests.get(id);
+    if (!request) return undefined;
+
+    // Não permitir atualização se a solicitação já estiver cotada ou em outro status além de 'pending'
+    if (request.status !== 'pending') {
+      throw new Error('Não é possível editar uma solicitação que já foi cotada ou processada');
+    }
+
+    // Criar objeto com os campos atualizados
+    const updatedRequest = {
+      ...request
+    };
+    
+    // Atualizar apenas os campos permitidos, ignorando userId, status, createdAt, completedAt
+    if (requestData.originCNPJ !== undefined) updatedRequest.originCNPJ = requestData.originCNPJ;
+    if (requestData.originCompanyName !== undefined) updatedRequest.originCompanyName = requestData.originCompanyName;
+    if (requestData.originStreet !== undefined) updatedRequest.originStreet = requestData.originStreet;
+    if (requestData.originCity !== undefined) updatedRequest.originCity = requestData.originCity;
+    if (requestData.originState !== undefined) updatedRequest.originState = requestData.originState;
+    if (requestData.originZipCode !== undefined) updatedRequest.originZipCode = requestData.originZipCode;
+    
+    if (requestData.destinationCNPJ !== undefined) updatedRequest.destinationCNPJ = requestData.destinationCNPJ;
+    if (requestData.destinationCompanyName !== undefined) updatedRequest.destinationCompanyName = requestData.destinationCompanyName;
+    if (requestData.destinationStreet !== undefined) updatedRequest.destinationStreet = requestData.destinationStreet;
+    if (requestData.destinationCity !== undefined) updatedRequest.destinationCity = requestData.destinationCity;
+    if (requestData.destinationState !== undefined) updatedRequest.destinationState = requestData.destinationState;
+    if (requestData.destinationZipCode !== undefined) updatedRequest.destinationZipCode = requestData.destinationZipCode;
+    
+    if (requestData.cargoType !== undefined) updatedRequest.cargoType = requestData.cargoType;
+    if (requestData.weight !== undefined) updatedRequest.weight = requestData.weight;
+    if (requestData.invoiceValue !== undefined) updatedRequest.invoiceValue = requestData.invoiceValue;
+    if (requestData.cargoDescription !== undefined) updatedRequest.cargoDescription = requestData.cargoDescription;
+    if (requestData.packageQuantity !== undefined) updatedRequest.packageQuantity = requestData.packageQuantity;
+    if (requestData.pickupDate !== undefined) updatedRequest.pickupDate = requestData.pickupDate;
+    if (requestData.deliveryDate !== undefined) updatedRequest.deliveryDate = requestData.deliveryDate;
+    if (requestData.notes !== undefined) updatedRequest.notes = requestData.notes;
+    if (requestData.requireInsurance !== undefined) updatedRequest.requireInsurance = requestData.requireInsurance;
+    
+    // Salvar a solicitação atualizada
+    this.freightRequests.set(id, updatedRequest);
+    
+    return updatedRequest;
+  }
+
+  async updateFreightRequest(id: number, requestData: Partial<InsertFreightRequest>): Promise<FreightRequest | undefined> {
+    // Verificar se a solicitação existe
+    const [request] = await db.select().from(freightRequests).where(eq(freightRequests.id, id));
+    if (!request) return undefined;
+
+    // Não permitir atualização se a solicitação já estiver cotada ou em outro status além de 'pending'
+    if (request.status !== 'pending') {
+      throw new Error('Não é possível editar uma solicitação que já foi cotada ou processada');
+    }
+
+    // Atualizar apenas os campos permitidos, ignorando userId, status, createdAt, completedAt
+    const allowedFields: Partial<FreightRequest> = {};
+    
+    // Adicionar apenas os campos presentes no objeto requestData
+    if (requestData.originCNPJ !== undefined) allowedFields.originCNPJ = requestData.originCNPJ;
+    if (requestData.originCompanyName !== undefined) allowedFields.originCompanyName = requestData.originCompanyName;
+    if (requestData.originStreet !== undefined) allowedFields.originStreet = requestData.originStreet;
+    if (requestData.originCity !== undefined) allowedFields.originCity = requestData.originCity;
+    if (requestData.originState !== undefined) allowedFields.originState = requestData.originState;
+    if (requestData.originZipCode !== undefined) allowedFields.originZipCode = requestData.originZipCode;
+    
+    if (requestData.destinationCNPJ !== undefined) allowedFields.destinationCNPJ = requestData.destinationCNPJ;
+    if (requestData.destinationCompanyName !== undefined) allowedFields.destinationCompanyName = requestData.destinationCompanyName;
+    if (requestData.destinationStreet !== undefined) allowedFields.destinationStreet = requestData.destinationStreet;
+    if (requestData.destinationCity !== undefined) allowedFields.destinationCity = requestData.destinationCity;
+    if (requestData.destinationState !== undefined) allowedFields.destinationState = requestData.destinationState;
+    if (requestData.destinationZipCode !== undefined) allowedFields.destinationZipCode = requestData.destinationZipCode;
+    
+    if (requestData.cargoType !== undefined) allowedFields.cargoType = requestData.cargoType;
+    if (requestData.weight !== undefined) allowedFields.weight = requestData.weight;
+    if (requestData.invoiceValue !== undefined) allowedFields.invoiceValue = requestData.invoiceValue;
+    if (requestData.cargoDescription !== undefined) allowedFields.cargoDescription = requestData.cargoDescription;
+    if (requestData.packageQuantity !== undefined) allowedFields.packageQuantity = requestData.packageQuantity;
+    if (requestData.pickupDate !== undefined) allowedFields.pickupDate = requestData.pickupDate;
+    if (requestData.deliveryDate !== undefined) allowedFields.deliveryDate = requestData.deliveryDate;
+    if (requestData.notes !== undefined) allowedFields.notes = requestData.notes;
+    if (requestData.requireInsurance !== undefined) allowedFields.requireInsurance = requestData.requireInsurance;
+    
+    // Realizar a atualização no banco
+    const [updatedRequest] = await db
+      .update(freightRequests)
+      .set(allowedFields)
+      .where(eq(freightRequests.id, id))
+      .returning();
     
     return updatedRequest;
   }
