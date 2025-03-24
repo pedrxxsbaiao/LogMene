@@ -138,7 +138,7 @@ export class DatabaseStorage implements IStorage {
   private async getLastClientOrderNumber(userId: number): Promise<number> {
     try {
       // Buscar o número de pedido mais alto para este cliente usando SQL raw
-      const result = await db.execute(
+      const result = await db.execute<{max_order_number: number}>(
         `SELECT MAX(client_order_number) AS max_order_number 
          FROM freight_requests 
          WHERE user_id = $1`,
@@ -146,7 +146,8 @@ export class DatabaseStorage implements IStorage {
       );
       
       // Se não houver pedidos anteriores ou o valor máximo for nulo, retorna 0
-      return result.rows[0]?.max_order_number || 0;
+      const maxOrderNumber = result.rows[0]?.max_order_number;
+      return maxOrderNumber ? Number(maxOrderNumber) : 0;
     } catch (error) {
       console.error("Erro ao obter último número de pedido do cliente:", error);
       return 0; // Em caso de erro, iniciar do 1
@@ -440,7 +441,7 @@ export class MemStorage implements IStorage {
   private quoteCounter: number;
   private proofCounter: number;
   private notificationCounter: number;
-  sessionStore: ReturnType<typeof createMemoryStore>;
+  sessionStore: any;
 
   constructor() {
     this.users = new Map();
@@ -453,7 +454,7 @@ export class MemStorage implements IStorage {
     this.quoteCounter = 1;
     this.proofCounter = 1;
     this.notificationCounter = 1;
-    this.sessionStore = new MemoryStore({
+    this.sessionStore = new (MemoryStore(session))({
       checkPeriod: 86400000,
     });
     
@@ -566,7 +567,8 @@ export class MemStorage implements IStorage {
       volume: 0, // Valor fixo para o campo volume
       id, 
       createdAt,
-      status: "pending" as const
+      status: "pending" as const,
+      completedAt: null // Adicionando campo completedAt para satisfazer o tipo
     };
     this.freightRequests.set(id, request);
     return request;
