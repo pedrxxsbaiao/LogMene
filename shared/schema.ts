@@ -28,6 +28,7 @@ export const requestStatus = ["pending", "quoted", "accepted", "rejected", "comp
 export const freightRequests = pgTable("freight_requests", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
+  clientOrderNumber: integer("client_order_number"), // Número sequencial específico por cliente
   // Campos de origem
   originCNPJ: text("origin_cnpj"),
   originCompanyName: text("origin_company_name"),
@@ -61,6 +62,7 @@ export const freightRequests = pgTable("freight_requests", {
 
 export const insertFreightRequestSchema = createInsertSchema(freightRequests).pick({
   userId: true,
+  clientOrderNumber: true,
   // Campos de origem
   originCNPJ: true,
   originCompanyName: true,
@@ -89,6 +91,7 @@ export const insertFreightRequestSchema = createInsertSchema(freightRequests).pi
   status: true,
 }).extend({
   volume: z.number().optional().default(0), // Tornando o campo volume opcional
+  clientOrderNumber: z.number().optional(), // Campo opcional no schema, será preenchido automaticamente
 });
 
 // Quotes

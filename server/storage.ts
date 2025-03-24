@@ -93,9 +93,14 @@ export class DatabaseStorage implements IStorage {
 
   async createFreightRequest(insertRequest: InsertFreightRequest): Promise<FreightRequest> {
     try {
+      // Obter o último número de pedido para este cliente
+      const lastOrderNumber = await this.getLastClientOrderNumber(insertRequest.userId);
+      const clientOrderNumber = lastOrderNumber + 1; // Incrementar 1 para o novo pedido
+      
       // Usar a API do Drizzle ORM para inserção
       const [newRequest] = await db.insert(freightRequests).values({
         userId: insertRequest.userId,
+        clientOrderNumber: clientOrderNumber, // Adicionar o número sequencial específico do cliente
         originCNPJ: insertRequest.originCNPJ || null,
         originCompanyName: insertRequest.originCompanyName || null,
         originStreet: insertRequest.originStreet,
@@ -126,6 +131,25 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Erro ao criar solicitação de frete:", error);
       throw error;
+    }
+  }
+  
+  // Obter o último número de pedido para um cliente específico
+  private async getLastClientOrderNumber(userId: number): Promise<number> {
+    try {
+      // Buscar o número de pedido mais alto para este cliente usando SQL raw
+      const result = await db.execute(
+        `SELECT MAX(client_order_number) AS max_order_number 
+         FROM freight_requests 
+         WHERE user_id = $1`,
+        [userId]
+      );
+      
+      // Se não houver pedidos anteriores ou o valor máximo for nulo, retorna 0
+      return result.rows[0]?.max_order_number || 0;
+    } catch (error) {
+      console.error("Erro ao obter último número de pedido do cliente:", error);
+      return 0; // Em caso de erro, iniciar do 1
     }
   }
 
@@ -527,12 +551,16 @@ export class MemStorage implements IStorage {
     const id = this.requestCounter++;
     const createdAt = new Date();
     
+    // Obter o último número de pedido para este cliente
+    const clientOrderNumber = this.getLastClientOrderNumber(insertRequest.userId) + 1;
+    
     // Garantir que campos opcionais não sejam undefined
     const notes = insertRequest.notes === undefined ? null : insertRequest.notes;
     const requireInsurance = insertRequest.requireInsurance === undefined ? false : insertRequest.requireInsurance;
     
     const request: FreightRequest = { 
       ...insertRequest,
+      clientOrderNumber, // Adicionar o número sequencial específico do cliente
       notes,
       requireInsurance, 
       volume: 0, // Valor fixo para o campo volume
@@ -542,6 +570,23 @@ export class MemStorage implements IStorage {
     };
     this.freightRequests.set(id, request);
     return request;
+  }
+  
+  // Método auxiliar para obter o último número de pedido de um cliente
+  private getLastClientOrderNumber(userId: number): number {
+    // Buscar todas as solicitações deste cliente e encontrar o maior clientOrderNumber
+    const userRequests = Array.from(this.freightRequests.values())
+      .filter(request => request.userId === userId);
+    
+    if (userRequests.length === 0) return 0;
+    
+    // Encontrar o maior clientOrderNumber
+    const maxOrderNumber = Math.max(
+      ...userRequests
+        .map(request => request.clientOrderNumber || 0)
+    );
+    
+    return maxOrderNumber;
   }
 
   async getFreightRequestById(id: number): Promise<FreightRequestWithQuote | undefined> {
