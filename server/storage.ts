@@ -747,9 +747,11 @@ export class MemStorage implements IStorage {
     
     // Garantir que campos opcionais não são undefined
     const notes = insertQuote.notes === undefined ? null : insertQuote.notes;
-    const value = insertQuote.value === undefined ? null : insertQuote.value;
-    const estimatedDays = insertQuote.estimatedDays === undefined ? null : insertQuote.estimatedDays;
-    const distanceKm = insertQuote.distanceKm === undefined ? null : insertQuote.distanceKm;
+    
+    // Campos obrigatórios devem ter valores válidos
+    const value = insertQuote.value;
+    const estimatedDays = insertQuote.estimatedDays;
+    const distanceKm = insertQuote.distanceKm || null;
     
     const quote: Quote = {
       requestId: insertQuote.requestId,
