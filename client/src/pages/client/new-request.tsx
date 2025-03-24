@@ -264,7 +264,29 @@ export default function NewRequestPage() {
                         </FormItem>
                       )}
                     />
-                    {/* Campo de Volume removido conforme solicitado */}
+                    <FormField
+                      control={form.control}
+                      name="volume"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Volume (m³)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              step="0.01"
+                              placeholder="Informe o volume"
+                              value={field.value === 0 || field.value === undefined ? "" : field.value}
+                              onChange={(e) => {
+                                const value = e.target.value === "" ? undefined : parseFloat(e.target.value);
+                                field.onChange(value);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField
                       control={form.control}
                       name="invoiceValue"
