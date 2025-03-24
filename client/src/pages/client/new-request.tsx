@@ -376,7 +376,13 @@ export default function NewRequestPage() {
                               mode="single"
                               selected={field.value ? new Date(field.value) : undefined}
                               onSelect={(date) => {
-                                field.onChange(date ? format(date, "yyyy-MM-dd") : "");
+                                if (date) {
+                                  // Ajustar para o fuso horário local para evitar diferenças de data
+                                  const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
+                                  field.onChange(format(localDate, "yyyy-MM-dd"));
+                                } else {
+                                  field.onChange("");
+                                }
                               }}
                               disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                               initialFocus
@@ -414,7 +420,13 @@ export default function NewRequestPage() {
                               mode="single"
                               selected={field.value ? new Date(field.value) : undefined}
                               onSelect={(date) => {
-                                field.onChange(date ? format(date, "yyyy-MM-dd") : "");
+                                if (date) {
+                                  // Ajustar para o fuso horário local para evitar diferenças de data
+                                  const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
+                                  field.onChange(format(localDate, "yyyy-MM-dd"));
+                                } else {
+                                  field.onChange("");
+                                }
                               }}
                               disabled={(date) => {
                                 // Desabilitar datas anteriores à data de retirada ou à data atual
