@@ -1,8 +1,11 @@
-import express, { type Request, Response, NextFunction } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import fs from 'fs';
 import path from 'path';
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import fsPromises from 'fs/promises';
 
 // Carrega variáveis de ambiente do arquivo .env se existir
 try {
@@ -66,6 +69,37 @@ app.use((req, res, next) => {
   next();
 });
 
+async function runVolumeMigration() {
+  try {
+    const sql = `
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'freight_requests' 
+        AND column_name = 'volume'
+      ) THEN
+        ALTER TABLE freight_requests
+        ADD COLUMN volume DECIMAL(10,2) DEFAULT 0.00;
+
+        UPDATE freight_requests
+        SET volume = 0.00
+        WHERE volume IS NULL;
+
+        ALTER TABLE freight_requests
+        ALTER COLUMN volume SET NOT NULL;
+      END IF;
+    END $$;
+    `;
+
+    await db.execute(sql);
+    console.log('Verificação/migração da coluna volume concluída com sucesso');
+  } catch (error) {
+    console.error('Erro ao verificar/migrar coluna volume:', error);
+  }
+}
+
 (async () => {
   const server = await registerRoutes(app);
 
@@ -94,7 +128,12 @@ app.use((req, res, next) => {
     port,
     host: "0.0.0.0",
     reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  }, async () => {
+    try {
+      await runVolumeMigration();
+      log(`serving on port ${port}`);
+    } catch (error) {
+      log(`Erro ao iniciar servidor: ${error}`, 'server');
+    }
   });
 })();
