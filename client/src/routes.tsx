@@ -15,10 +15,6 @@ import CreateQuotePage from "@/pages/company/create-quote";
 import ClientsPage from "@/pages/company/clients";
 import CreateClientPage from "@/pages/company/create-client";
 import ClientRequestsPage from "@/pages/company/client-requests";
-import TestNotificationPage from "@/pages/test-notification";
-import TestGmailPage from "@/pages/test-gmail";
-import TestDistancePage from "@/pages/test-distance";
-import TestSMSPage from "@/pages/test-sms";
 
 export function Router() {
   const { user } = useAuth();
@@ -62,7 +58,12 @@ export function Router() {
       
       {/* Company routes */}
       <ProtectedRoute 
-        path="/company/quotes/:requestId" 
+        path="/company/requests/:id" 
+        component={CompanyRequestDetailsPage} 
+        allowedRoles={["company"]} 
+      />
+      <ProtectedRoute 
+        path="/company/requests/:id/quote" 
         component={CreateQuotePage} 
         allowedRoles={["company"]} 
       />
@@ -72,43 +73,16 @@ export function Router() {
         allowedRoles={["company"]} 
       />
       <ProtectedRoute 
-        path="/company/create-client" 
+        path="/company/clients/new" 
         component={CreateClientPage} 
         allowedRoles={["company"]} 
       />
       <ProtectedRoute 
-        path="/company/requests/:id" 
-        component={CompanyRequestDetailsPage} 
-        allowedRoles={["company"]} 
-      />
-      <ProtectedRoute 
-        path="/company/client/:id/requests" 
+        path="/company/clients/:id/requests" 
         component={ClientRequestsPage} 
         allowedRoles={["company"]} 
       />
       
-      {/* Test tools route - for development only */}
-      <ProtectedRoute 
-        path="/test-notification" 
-        component={TestNotificationPage} 
-      />
-      
-      <ProtectedRoute 
-        path="/test-gmail" 
-        component={TestGmailPage} 
-      />
-      
-      <ProtectedRoute 
-        path="/test-distance" 
-        component={TestDistancePage} 
-      />
-      
-      <ProtectedRoute 
-        path="/test-sms" 
-        component={TestSMSPage} 
-      />
-      
-      {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
   );
