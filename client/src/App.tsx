@@ -9,7 +9,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <div className="bg-slate-900 min-h-screen text-slate-50">
+        <div className="bg-white min-h-screen text-neutral-900">
           <Router />
           <Toaster />
         </div>

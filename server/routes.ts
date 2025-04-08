@@ -185,6 +185,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para buscar todos os clientes (para a empresa)
+  app.get("/api/company/clients", ensureAuthenticated, async (req: Request, res) => {
+    try {
+      const user = req.user as User;
+      // Verificar se é uma empresa
+      if (user.role !== "company") {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      // Buscar todos os usuários com role 'client'
+      const clients = await db.select()
+        .from(users)
+        .where(eq(users.role, "client"));
+
+      // Remover senhas antes de enviar
+      const clientsWithoutPassword = clients.map(({ password, ...client }) => client);
+
+      res.json(clientsWithoutPassword);
+    } catch (error) {
+      console.error("Erro ao buscar clientes:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
   // Rota para criar uma nova cotação
   app.post("/api/quotes", ensureAuthenticated, async (req, res) => {
     try {
@@ -317,9 +341,10 @@ function handleZodError(error: unknown, res: Response) {
 
 function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
   if (!req.user) {
-    res.status(401).json({ error: 'Não autenticado' });
-    return;
+    return res.status(401).json({ error: 'Não autenticado' });
   }
+  // Adiciona um log para verificar o usuário autenticado
+  // console.log('Usuário autenticado:', req.user);
   next();
 }
 
