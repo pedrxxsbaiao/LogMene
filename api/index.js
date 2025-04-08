@@ -1,0 +1,1 @@
+app.use('/api/freight-requests', freightRequestsHandler); 
