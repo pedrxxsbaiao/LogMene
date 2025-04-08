@@ -116,7 +116,7 @@ export class DatabaseStorage implements IStorage {
         destinationZipCode: insertRequest.destinationZipCode || null,
         cargoType: insertRequest.cargoType,
         weight: insertRequest.weight,
-        volume: 0, // Valor fixo para o campo volume
+        volume: insertRequest.volume || 0, // Usando o valor do objeto insertRequest ou 0 como padrão
         invoiceValue: insertRequest.invoiceValue,
         cargoDescription: insertRequest.cargoDescription || null,
         packageQuantity: insertRequest.packageQuantity || null,
@@ -612,7 +612,7 @@ export class MemStorage implements IStorage {
       clientOrderNumber, // Adicionar o número sequencial específico do cliente
       notes,
       requireInsurance, 
-      volume: 0, // Valor fixo para o campo volume
+      volume: insertRequest.volume || 0, // Usando o valor do objeto insertRequest ou 0 como padrão
       id, 
       createdAt,
       status: "pending" as const,
