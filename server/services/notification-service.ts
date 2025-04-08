@@ -45,71 +45,30 @@ export async function sendNotification({
     if (shouldSendEmail && user.email) {
       try {
         // Verificar se as credenciais do Gmail estão configuradas
-        const hasGmailCredentials = process.env.GOOGLE_CLIENT_ID && 
-                                   process.env.GOOGLE_CLIENT_SECRET && 
-                                   process.env.GOOGLE_REFRESH_TOKEN;
+        const hasGmailCredentials = process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET && process.env.GMAIL_REFRESH_TOKEN;
         
-        // Verificar se as credenciais do MailerSend estão configuradas
-        const hasMailerSendCredentials = process.env.MAILERSEND_API_KEY;
-        
-        // Se não tiver nenhuma configuração, apenas log e continua
-        if (!hasGmailCredentials && !hasMailerSendCredentials) {
-          log('Nenhum serviço de email configurado. Ignorando o envio de email.', 'notification-service');
-          return true; // Retorna true pois a notificação interna foi criada com sucesso
+        if (!hasGmailCredentials) {
+          log('Credenciais do Gmail não configuradas', 'notification-service');
+          return false;
         }
         
-        // Primeiro tenta enviar via Gmail API se configurado
+        // Remover todas as referências ao MailerSend e manter apenas o Gmail
         if (hasGmailCredentials) {
           try {
-            const emailParams = createGmailEmail(
-              type,
-              user.fullName || user.username,
-              requestId || 0,
-              {
-                status: type === 'status_update' ? message : undefined,
-                value: type === 'quote_received' ? parseFloat(message.match(/R\$ ([\d,.]+)/)?.[1]?.replace('.', '').replace(',', '.') || '0') : undefined
-              }
-            );
-
-            const result = await sendGmailEmail({
-              ...emailParams,
+            const gmailResult = await sendGmailEmail({
               to: user.email,
+              subject: type,
+              html: message,
+              text: message
             });
-
-            if (result) {
-              log(`Email enviado via Gmail API para ${user.email}`, 'notification-service');
-              return true; // Se o Gmail funcionou, não tenta o MailerSend
-            } else {
-              log('Falha no envio via Gmail API, tentando MailerSend como backup', 'notification-service');
+            
+            if (gmailResult) {
+              log(`Email enviado via Gmail para ${user.email}`, 'notification-service');
+              return true;
             }
           } catch (gmailError) {
-            log(`Erro com o Gmail API: ${gmailError}. Tentando MailerSend como backup.`, 'notification-service');
-          }
-        }
-
-        // Se Gmail não está configurado ou falhou, usa MailerSend como backup
-        if (hasMailerSendCredentials) {
-          const emailParams = createMailerSendEmail(
-            type,
-            user.fullName || user.username,
-            requestId || 0,
-            {
-              status: type === 'status_update' ? message : undefined,
-              value: type === 'quote_received' ? parseFloat(message.match(/R\$ ([\d,.]+)/)?.[1]?.replace('.', '').replace(',', '.') || '0') : undefined
-            }
-          );
-
-          const result = await sendMailerSendEmail({
-            ...emailParams,
-            to: user.email,
-          });
-
-          if (result) {
-            log(`Email enviado via MailerSend para ${user.email}`, 'notification-service');
-            return true;
-          } else {
-            log('Falha no envio com MailerSend', 'notification-service');
-            return true; // Continua mesmo com falha no email
+            log(`Erro com o Gmail API: ${gmailError}`, 'notification-service');
+            return false;
           }
         }
       } catch (error) {
@@ -380,9 +339,7 @@ export async function sendNewFreightRequestNotification(companyUserId: number, r
       // Verificar se temos os detalhes do frete para enviar email detalhado
       if (freightDetails && company.email) {
         // Verificar se as credenciais do Gmail estão configuradas
-        const hasGmailCredentials = process.env.GOOGLE_CLIENT_ID && 
-                                   process.env.GOOGLE_CLIENT_SECRET && 
-                                   process.env.GOOGLE_REFRESH_TOKEN;
+        const hasGmailCredentials = process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET && process.env.GMAIL_REFRESH_TOKEN;
         
         if (hasGmailCredentials) {
           try {

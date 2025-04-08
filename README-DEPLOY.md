@@ -20,7 +20,6 @@ Configure as seguintes variáveis de ambiente na Vercel:
 - `NODE_ENV`: Defina como "production"
 
 **Opcionais (de acordo com os recursos que deseja usar):**
-- `MAILERSEND_API_KEY`: API Key do MailerSend para envio de emails
 - `TWILIO_ACCOUNT_SID`: Account SID do Twilio para envio de SMS
 - `TWILIO_AUTH_TOKEN`: Auth Token do Twilio
 - `TWILIO_PHONE_NUMBER`: Número de telefone do Twilio (com formato internacional)
@@ -96,8 +95,7 @@ Após o deployment, verifique se tudo está funcionando corretamente:
    - Certifique-se de que o IP da Vercel está liberado no firewall do banco de dados.
 
 2. **Erros de email**:
-   - Verifique se a API Key do MailerSend está correta.
-   - Confirme se o domínio de email está verificado na plataforma MailerSend.
+   - Verifique se o domínio de email está verificado na plataforma MailerSend.
 
 3. **Erros de SMS**:
    - Verifique as credenciais do Twilio.
