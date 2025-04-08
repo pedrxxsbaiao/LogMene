@@ -5,6 +5,8 @@ import fs from 'fs';
 import path from 'path';
 import { neon } from '@neondatabase/serverless';
 import fsPromises from 'fs/promises';
+import compression from 'compression';
+import helmet from 'helmet';
 
 // Carrega variáveis de ambiente do arquivo .env se existir
 try {
@@ -35,8 +37,32 @@ try {
 }
 
 const app = express();
+
+// Configurações de segurança e performance
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+    },
+  },
+}));
+
+// Compressão GZIP
+app.use(compression());
+
+// Limites de requisição
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+
+// Cache de headers
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'public, max-age=31536000');
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();

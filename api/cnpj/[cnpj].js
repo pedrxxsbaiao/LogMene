@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { validateCNPJ, fetchCNPJData } from '../../../server/utils/cnpj-utils';
 
 // Interface para os dados de endereço retornados pela API
 /**
@@ -142,75 +143,32 @@ async function fetchCNPJData(cnpj) {
  * @param {import('express').Response} res
  */
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  // Preflight request
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
   if (req.method !== 'GET') {
-    return res.status(405).json({ success: false, message: 'Method not allowed' });
+    return res.status(405).json({ success: false, error: 'Método não permitido' });
   }
-  
+
+  const { cnpj } = req.query;
+
+  if (!cnpj) {
+    return res.status(400).json({ success: false, error: 'CNPJ não fornecido' });
+  }
+
+  // Validar o CNPJ
+  if (!validateCNPJ(cnpj)) {
+    return res.status(400).json({ success: false, error: 'CNPJ inválido' });
+  }
+
   try {
-    const { cnpj } = req.query;
-    
-    if (!cnpj) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "CNPJ é obrigatório" 
-      });
+    // Buscar dados do CNPJ
+    const data = await fetchCNPJData(cnpj);
+
+    if (!data) {
+      return res.status(404).json({ success: false, error: 'CNPJ não encontrado' });
     }
-    
-    // Remover caracteres não numéricos do CNPJ
-    const cleanCNPJ = cnpj.replace(/\D/g, '');
-    
-    // Validar o CNPJ
-    if (!validateCNPJ(cleanCNPJ)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "CNPJ inválido" 
-      });
-    }
-    
-    console.log(`Buscando dados do CNPJ: ${cleanCNPJ}`);
-    
-    const cnpjData = await fetchCNPJData(cleanCNPJ);
-    
-    if (!cnpjData) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Não foi possível encontrar dados para este CNPJ" 
-      });
-    }
-    
-    if (cnpjData.error) {
-      return res.status(404).json({ 
-        success: false, 
-        message: cnpjData.error 
-      });
-    }
-    
-    // Formatar o endereço completo
-    const formattedAddress = formatAddress(cnpjData);
-    
-    return res.json({
-      success: true,
-      data: {
-        ...cnpjData,
-        formattedAddress
-      }
-    });
+
+    return res.status(200).json({ success: true, data });
   } catch (error) {
-    console.error(`Erro ao buscar CNPJ: ${error}`);
-    return res.status(500).json({ 
-      success: false, 
-      message: "Erro ao processar a requisição",
-      error: error.message || String(error)
-    });
+    console.error('Erro ao buscar CNPJ:', error);
+    return res.status(500).json({ success: false, error: 'Erro ao buscar CNPJ' });
   }
 }
