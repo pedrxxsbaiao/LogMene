@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: logmene
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: logmene-db
+          property: connectionString
+    healthCheckPath: /api/health
+    autoDeploy: true 
