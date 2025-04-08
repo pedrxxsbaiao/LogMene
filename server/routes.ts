@@ -21,7 +21,7 @@ import { fromZodError } from "zod-validation-error";
 import { log } from "./vite";
 import axios from "axios";
 import { fetchCNPJData, formatAddress, validateCNPJ } from "./services/cnpj-service";
-import { sendSMS } from "./services/sms-service";
+import { sendGmailEmail } from './services/gmail-service';
 import { 
   sendStatusUpdateNotification, 
   sendQuoteNotification, 
@@ -29,6 +29,10 @@ import {
   sendNewFreightRequestNotification
 } from "./services/notification-service";
 import { distanceHandler } from "./distance-handler";
+import express from 'express';
+import { InsertNotification } from '@shared/schema';
+
+const router = express.Router();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -81,13 +85,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rota para criar uma nova notificação
-  app.post("/api/notifications", ensureAuthenticated, async (req, res) => {
+  router.post('/notifications', async (req, res) => {
     try {
-      const validatedData = insertNotificationSchema.parse(req.body);
-      const result = await db.insert(notifications).values(validatedData).returning();
-      res.json(result[0]);
+      const notification: InsertNotification = req.body;
+      
+      // Validar dados da notificação
+      if (!notification.userId || !notification.type || !notification.message) {
+        return res.status(400).json({ error: 'Dados da notificação inválidos' });
+      }
+
+      // Criar notificação no banco de dados
+      const createdNotification = await storage.createNotification(notification);
+      return res.status(201).json(createdNotification);
     } catch (error) {
-      handleZodError(error, res);
+      log(`Erro ao criar notificação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'routes');
+      return res.status(500).json({ error: 'Erro interno do servidor' });
     }
   });
 
@@ -97,17 +109,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cnpj = req.params.cnpj;
       const data = await fetchCNPJData(cnpj);
       res.json(data);
-    } catch (error) {
-      res.status(500).json({ error: error instanceof Error ? error.message : 'Erro desconhecido' });
-    }
-  });
-
-  // Rota para enviar SMS
-  app.post("/api/sms", ensureAuthenticated, async (req, res) => {
-    try {
-      const { to, message } = req.body;
-      const result = await sendSMS(to, message);
-      res.json({ success: result });
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : 'Erro desconhecido' });
     }
@@ -186,4 +187,6 @@ function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
     return;
   }
   next();
-} 
+}
+
+export default router; 

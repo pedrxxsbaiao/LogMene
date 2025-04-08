@@ -1,27 +1,23 @@
 import { storage } from '../storage';
-import { sendSMS } from './sms-service';
 import { log } from '../vite';
 import { InsertNotification } from '@shared/schema';
 
 /**
- * Serviço para enviar notificações para usuários
- * Permite envio de notificações in-app e SMS quando configurados
+ * Serviço para enviar notificações internas para usuários
  */
 export async function sendNotification({
   userId,
   requestId,
   type,
   message,
-  sendSMS: shouldSendSMS = true,
 }: {
   userId: number;
   requestId: number | null;
   type: InsertNotification['type'];
   message: string;
-  sendSMS?: boolean;
 }) {
   try {
-    // Buscar usuário para obter telefone e nome
+    // Buscar usuário
     const user = await storage.getUser(userId);
     if (!user) {
       log(`Usuário não encontrado para envio de notificação: ${userId}`, 'notification-service');
@@ -38,17 +34,6 @@ export async function sendNotification({
     });
 
     log(`Notificação interna criada: [${type}] ${message} para usuário ${userId}`, 'notification-service');
-
-    // Se solicitado, enviar também por SMS
-    if (shouldSendSMS && user.phone) {
-      try {
-        await sendSMS(user.phone, message);
-        log(`SMS enviado para ${user.phone}: ${message}`, 'notification-service');
-      } catch (error) {
-        log(`Erro ao enviar SMS: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'notification-service');
-      }
-    }
-
     return true;
   } catch (error) {
     log(`Erro ao enviar notificação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'notification-service');
