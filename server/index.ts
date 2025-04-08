@@ -4,7 +4,6 @@ import { setupVite, serveStatic, log } from "./vite";
 import fs from 'fs';
 import path from 'path';
 import { neon } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
 import fsPromises from 'fs/promises';
 
 // Carrega variáveis de ambiente do arquivo .env se existir
@@ -71,7 +70,13 @@ app.use((req, res, next) => {
 
 async function runVolumeMigration() {
   try {
-    const sql = `
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL não está definida');
+    }
+
+    const sql = neon(process.env.DATABASE_URL);
+
+    const migrationSQL = `
     DO $$
     BEGIN
       IF NOT EXISTS (
@@ -93,7 +98,7 @@ async function runVolumeMigration() {
     END $$;
     `;
 
-    await db.execute(sql);
+    await sql(migrationSQL);
     console.log('Verificação/migração da coluna volume concluída com sucesso');
   } catch (error) {
     console.error('Erro ao verificar/migrar coluna volume:', error);
