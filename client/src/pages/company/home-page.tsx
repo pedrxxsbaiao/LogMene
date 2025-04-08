@@ -11,20 +11,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { formatISODateToDisplay } from "@/lib/utils";
+import { getQueryFn } from "@/lib/queryClient";
 
 export default function CompanyHomePage() {
   const [, navigate] = useLocation();
   
   const { data: pendingRequests, isLoading: isPendingLoading } = useQuery<FreightRequestWithQuote[]>({
-    queryKey: ["/api/company/pending-requests"],
+    queryKey: ["/api/freight-requests/pending"],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
   
   const { data: activeRequests, isLoading: isActiveLoading } = useQuery<FreightRequestWithQuote[]>({
-    queryKey: ["/api/company/active-requests"]
+    queryKey: ["/api/freight-requests/active"],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
   
   const { data: completedRequests, isLoading: isCompletedLoading } = useQuery<FreightRequestWithQuote[]>({
-    queryKey: ["/api/company/completed-requests"],
+    queryKey: ["/api/freight-requests/completed"],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
   
   // Log para depuração

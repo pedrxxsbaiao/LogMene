@@ -12,9 +12,9 @@ type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
+  loginMutation: UseMutationResult<{ user: SelectUser; token: string }, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  registerMutation: UseMutationResult<{ user: SelectUser; token: string }, Error, InsertUser>;
 };
 
 type LoginData = Pick<InsertUser, "username" | "password">;
@@ -36,11 +36,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/login", credentials);
       return await res.json();
     },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-      const welcomeMessage = user.role === "company" 
+    onSuccess: (data: { user: SelectUser; token: string }) => {
+      localStorage.setItem("token", data.token);
+      queryClient.setQueryData(["/api/user"], data.user);
+      const welcomeMessage = data.user.role === "company" 
         ? "Bem-vindo(a) de volta, LogMene!" 
-        : `Bem-vindo(a) de volta, ${user.fullName}!`;
+        : `Bem-vindo(a) de volta, ${data.user.fullName}!`;
       toast({
         title: "Login realizado com sucesso",
         description: welcomeMessage,
@@ -60,11 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/register", credentials);
       return await res.json();
     },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-      const welcomeMessage = user.role === "company" 
+    onSuccess: (data: { user: SelectUser; token: string }) => {
+      localStorage.setItem("token", data.token);
+      queryClient.setQueryData(["/api/user"], data.user);
+      const welcomeMessage = data.user.role === "company" 
         ? "Bem-vindo(a), LogMene!" 
-        : `Bem-vindo(a), ${user.fullName}!`;
+        : `Bem-vindo(a), ${data.user.fullName}!`;
       toast({
         title: "Cadastro realizado com sucesso",
         description: welcomeMessage,
@@ -84,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
+      localStorage.removeItem("token");
       queryClient.setQueryData(["/api/user"], null);
       toast({
         title: "Sessão encerrada",

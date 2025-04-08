@@ -12,16 +12,16 @@ import {
   quotes,
   users,
   deliveryProofs,
-  notifications
+  notifications,
+  User
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { ZodError, z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { log } from "./vite";
 import axios from "axios";
 import { fetchCNPJData, formatAddress, validateCNPJ } from "./services/cnpj-service";
-import { sendGmailEmail } from './services/gmail-service';
 import { 
   sendStatusUpdateNotification, 
   sendQuoteNotification, 
@@ -33,6 +33,11 @@ import express from 'express';
 import { InsertNotification } from '@shared/schema';
 
 const router = express.Router();
+
+// Tipo para o usuário autenticado
+interface AuthenticatedRequest extends Request {
+  user: User;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -48,6 +53,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result[0]);
     } catch (error) {
       handleZodError(error, res);
+    }
+  });
+
+  // Rota para buscar solicitações pendentes
+  app.get("/api/freight-requests/pending", ensureAuthenticated, async (req: Request, res) => {
+    try {
+      const user = req.user as User;
+      // Verificar se é uma empresa
+      if (user.role !== "company") {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      const pendingRequests = await db.select()
+        .from(freightRequests)
+        .where(eq(freightRequests.status, "pending"));
+
+      // Adicionar dados relacionados
+      const requestsWithData = await Promise.all(
+        pendingRequests.map(async (request) => {
+          // Buscar cotação se existir
+          const [quote] = await db.select()
+            .from(quotes)
+            .where(eq(quotes.requestId, request.id))
+            .limit(1);
+
+          // Buscar nome do cliente
+          const [client] = await db.select()
+            .from(users)
+            .where(eq(users.id, request.userId))
+            .limit(1);
+
+          return {
+            ...request,
+            quote: quote || undefined,
+            clientName: client?.fullName
+          };
+        })
+      );
+
+      res.json(requestsWithData);
+    } catch (error) {
+      console.error("Erro ao buscar solicitações pendentes:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  // Rota para buscar solicitações ativas
+  app.get("/api/freight-requests/active", ensureAuthenticated, async (req: Request, res) => {
+    try {
+      const user = req.user as User;
+      // Verificar se é uma empresa
+      if (user.role !== "company") {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      const activeRequests = await db.select()
+        .from(freightRequests)
+        .where(inArray(freightRequests.status, ["quoted", "accepted"]));
+
+      // Adicionar dados relacionados
+      const requestsWithData = await Promise.all(
+        activeRequests.map(async (request) => {
+          // Buscar cotação se existir
+          const [quote] = await db.select()
+            .from(quotes)
+            .where(eq(quotes.requestId, request.id))
+            .limit(1);
+
+          // Buscar nome do cliente
+          const [client] = await db.select()
+            .from(users)
+            .where(eq(users.id, request.userId))
+            .limit(1);
+
+          return {
+            ...request,
+            quote: quote || undefined,
+            clientName: client?.fullName
+          };
+        })
+      );
+
+      res.json(requestsWithData);
+    } catch (error) {
+      console.error("Erro ao buscar solicitações ativas:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  // Rota para buscar solicitações completas
+  app.get("/api/freight-requests/completed", ensureAuthenticated, async (req: Request, res) => {
+    try {
+      const user = req.user as User;
+      // Verificar se é uma empresa
+      if (user.role !== "company") {
+        return res.status(403).json({ error: "Acesso negado" });
+      }
+
+      const completedRequests = await db.select()
+        .from(freightRequests)
+        .where(eq(freightRequests.status, "completed"));
+
+      // Adicionar dados relacionados
+      const requestsWithData = await Promise.all(
+        completedRequests.map(async (request) => {
+          // Buscar cotação se existir
+          const [quote] = await db.select()
+            .from(quotes)
+            .where(eq(quotes.requestId, request.id))
+            .limit(1);
+
+          // Buscar nome do cliente
+          const [client] = await db.select()
+            .from(users)
+            .where(eq(users.id, request.userId))
+            .limit(1);
+
+          return {
+            ...request,
+            quote: quote || undefined,
+            clientName: client?.fullName
+          };
+        })
+      );
+
+      res.json(requestsWithData);
+    } catch (error) {
+      console.error("Erro ao buscar solicitações completas:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
     }
   });
 

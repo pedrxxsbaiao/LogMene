@@ -8,15 +8,23 @@ import jwt from 'jsonwebtoken';
 function authenticateUser(req) {
   try {
     const authHeader = req.headers.authorization;
+    console.log('Auth header:', authHeader);
+    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Header de autorização inválido');
       return null;
     }
     
     const token = authHeader.split(' ')[1];
-    return jwt.verify(
+    console.log('Token extraído:', token);
+    
+    const decoded = jwt.verify(
       token, 
       process.env.JWT_SECRET || 'seu_segredo_jwt_aqui'
-    ).user;
+    );
+    
+    console.log('Token decodificado:', decoded);
+    return decoded.user;
   } catch (error) {
     console.error('Erro ao autenticar usuário:', error);
     return null;
@@ -25,12 +33,15 @@ function authenticateUser(req) {
 
 // Verificar se o usuário tem o papel necessário
 function checkUserRole(user, role) {
+  console.log('Verificando papel do usuário:', { user, role });
   return user && user.role === role;
 }
 
 export default async function handler(req, res) {
   // Verificar autenticação
   const user = authenticateUser(req);
+  console.log('Usuário autenticado:', user);
+  
   if (!user) {
     return res.status(401).json({ error: 'Não autorizado' });
   }
@@ -39,6 +50,7 @@ export default async function handler(req, res) {
   
   // Roteamento baseado no caminho
   const path = req.url.replace('/api/freight-requests', '').split('?')[0];
+  console.log('Rota acessada:', path);
   
   // Funções auxiliares para obter dados relacionados
   async function getFreightRequestWithQuote(id) {
@@ -252,14 +264,19 @@ export default async function handler(req, res) {
       }
       
       try {
+        console.log('Buscando solicitações pendentes...');
         const pendingRequests = await db.select()
           .from(freightRequests)
           .where(eq(freightRequests.status, 'pending'));
           
+        console.log(`Encontradas ${pendingRequests.length} solicitações pendentes`);
+        
         // Adicionar dados relacionados
         const requestsWithData = await Promise.all(
           pendingRequests.map(async (req) => await getFreightRequestWithQuote(req.id))
         );
+        
+        console.log('Dados retornados:', JSON.stringify(requestsWithData));
         
         return res.status(200).json(requestsWithData);
       } catch (error) {
@@ -279,6 +296,7 @@ export default async function handler(req, res) {
       }
       
       try {
+        console.log('Buscando solicitações ativas...');
         const activeRequests = await db.select()
           .from(freightRequests)
           .where(inArray(freightRequests.status, ['quoted', 'accepted']));
@@ -312,14 +330,19 @@ export default async function handler(req, res) {
       }
       
       try {
+        console.log('Buscando solicitações completas...');
         const completedRequests = await db.select()
           .from(freightRequests)
           .where(eq(freightRequests.status, 'completed'));
           
+        console.log(`Encontradas ${completedRequests.length} solicitações completas`);
+        
         // Adicionar dados relacionados
         const requestsWithData = await Promise.all(
           completedRequests.map(async (req) => await getFreightRequestWithQuote(req.id))
         );
+        
+        console.log('Dados retornados:', JSON.stringify(requestsWithData));
         
         return res.status(200).json(requestsWithData);
       } catch (error) {
